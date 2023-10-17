@@ -39,13 +39,8 @@ To use this SwiftUI Package in your Xcode project, follow these steps:
     @State var insideAdCallback = ""
     ```
 10. Insert the screenName as a parameter and request the ad in the view body:
-
-        ```Swift
-        ...
-            var body: some View {
-                ...
-                insideAd.requestAd(screen: "", insideAdCallback: $insideAdCallback)
-                ...
-            }
-        ...
+    ```Swift
+        var body: some View {
+            insideAd.requestAd(screen: "", insideAdCallback: $insideAdCallback)
+        }        
     ```
