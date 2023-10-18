@@ -68,6 +68,10 @@ class InsideAdViewController: UIViewController, ObservableObject {
             insideAdCallbackDelegate.insideAdCallbackReceived(data: Logger.log("Api Key is required. Please implement the initializeSdk method."))
             return
         }
+        if Constants.ResellerInfo.baseUrl == "" {
+          insideAdCallbackDelegate.insideAdCallbackReceived(data: Logger.log("Base Url is required. Please implement the initializeSdk method."))
+          return
+        }
         SDKAPI.getGeoIpUrl { geoIpUrl, error in
             if let geoIpUrl {
                 SDKAPI.getGeoIp(fromUrl: geoIpUrl.geoIpUrl) { geoIp, error in
