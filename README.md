@@ -1,6 +1,6 @@
 # streann-inside-ad-sdk-ios
 
-This is an adds support for Swift Package to the Google Interactive Media Ads (IMA) SDK.
+This is an adds support for SwiftUI Package to the Google Interactive Media Ads (IMA) SDK.
 
 ## Current supported version:
 
@@ -8,7 +8,7 @@ iOS: `14.0`
 
 ## Getting Started
 
-### Swift Package Manager
+### streann-inside-ad-sdk-ios SwiftUI Package Manager
 
 To use this SwiftUI Package in your Xcode project, follow these steps:
 
@@ -28,19 +28,23 @@ To use this SwiftUI Package in your Xcode project, follow these steps:
             .onAppear {
                 StreannInsideAdSdk.initializeSdk(baseUrl: "some base url", apiKey: "some api key")
             }
-        ...
+    ...
     ```
 8. In the view where the the Ad will be presented import the streann-inside-ad-sdk-ios module:
     ```Swift
     import streann_inside_ad_sdk_ios
     ```
-9. Create a State String property to receive the insideAd callbacks:
+9. Create an instance of the streann-inside-ad-sdk-ios module:
+    ```Swift
+    var streannInsideAdSdk  = StreannInsideAdSdk()
+    ```
+10. Create a State String property to receive the insideAd callbacks:
     ```Swift
     @State var insideAdCallback = ""
     ```
-10. Insert the screenName as a parameter and request the ad in the view body:
+11. Insert the screenName (e.g. "Launch") as a parameter and request the ad in the view body:
     ```Swift
-        var body: some View {
-            insideAd.requestAd(screen: "", insideAdCallback: $insideAdCallback)
-        }        
+    var body: some View {
+        insideAdCallback.requestAd(screen: "Launch", insideAdCallback: $insideAdCallback)
+    }        
     ```
