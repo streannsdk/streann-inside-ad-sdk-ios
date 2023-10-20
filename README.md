@@ -30,6 +30,15 @@ To use this SwiftUI Package in your Xcode project, follow these steps:
             }
     ...
     ```
+    You could also implement the optional parameters:
+    ```Swift
+    siteUrl: String, 
+    storeUrl: String, 
+    descriptionUrl: String, 
+    userBirthYear: Int64, 
+    userGender: UserGender(Enum)
+    ```
+    
 8. In the view where the the Ad will be presented import the streann-inside-ad-sdk-ios module:
     ```Swift
     import streann_inside_ad_sdk_ios
@@ -38,10 +47,21 @@ To use this SwiftUI Package in your Xcode project, follow these steps:
     ```Swift
     var streannInsideAdSdk  = StreannInsideAdSdk()
     ```
-10. Create a State String property to receive the insideAd status callbacks (errors and ad player's state') as "StreannInsideAdSDK: "The VAST response document is empty", "Loaded", "Started First Quartile", "Midpoint", "Third Quartile", "Complete", "All Ads Completed":
+10. Create a State String property to receive the insideAd status callbacks (errors and ad player's state'):
     ```Swift
     @State var insideAdCallback = ""
     ```
+    Callbacks:
+    ```Swift
+    "StreannInsideAdSDK: Started"
+    "StreannInsideAdSDK: Loaded"
+    "StreannInsideAdSDK: Started First Quartile"
+    "StreannInsideAdSDK: Midpoint"
+    "StreannInsideAdSDK: Third Quartile"
+    "StreannInsideAdSDK: Complete"
+    "StreannInsideAdSDK: All Ads Completed"
+    "StreannInsideAdSDK: The VAST response document is empty"
+    ```    
 11. Insert the screenName (e.g. "Launch") as a parameter and request the ad in the view body. This will return a view:
     ```Swift
     var body: some View {
