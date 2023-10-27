@@ -9,5 +9,5 @@ import Foundation
 
 //Send the InsideAdCallback events
 protocol InsideAdCallbackDelegate {
-  func insideAdCallbackReceived(data: String)
+  func insideAdCallbackReceived(data: InsideAdCallbackType)
 }
