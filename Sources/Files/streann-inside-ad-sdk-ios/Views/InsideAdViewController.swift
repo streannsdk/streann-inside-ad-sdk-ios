@@ -129,6 +129,7 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     
     func adsLoader(_ loader: IMAAdsLoader, failedWith adErrorData: IMAAdLoadingErrorData) {
         insideAdCallbackDelegate.insideAdCallbackReceived(data: convertErrorType(message: adErrorData.adError.message ?? ""))
+        self.view.removeFromSuperview()
         print(Logger.log("\(adErrorData.adError.message ?? "Unknown error")"))
     }
     
@@ -146,6 +147,7 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
         // Something went wrong with the ads manager after ads were loaded. Log the error and play the
         // content.
         insideAdCallbackDelegate.insideAdCallbackReceived(data: convertErrorType(message: error.message ?? ""))
+        self.view.removeFromSuperview()
         print(Logger.log("\(error.message ?? "Unknown error")"))
     }
     
@@ -155,6 +157,7 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     
     func adsManagerDidRequestContentResume(_ adsManager: IMAAdsManager) {
         // The SDK is done playing ads (at least for now), so resume the content.
+        self.view.removeFromSuperview()
     }
 }
 
