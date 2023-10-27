@@ -19,7 +19,6 @@ public struct InsideAdView: View, InsideAdCallbackDelegate {
     public var body: some View {
         GeometryReader { geo in
             InsideAdViewWrapper(screen: screen, parent: self, viewSize: geo.size)
-                .padding(.horizontal)
         }
     }
 }
