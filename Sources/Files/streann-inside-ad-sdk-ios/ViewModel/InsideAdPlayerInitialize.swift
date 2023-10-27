@@ -26,7 +26,7 @@ public class StreannInsideAdSdk {
     }
     
     @ViewBuilder
-    public func requestAd(screen: String, insideAdCallback: Binding<String>) -> some View {
+    public func requestAd(screen: String, insideAdCallback: Binding<InsideAdCallbackType>) -> some View {
         InsideAdView(screen: screen, insideAdCallback: insideAdCallback)
     }
     

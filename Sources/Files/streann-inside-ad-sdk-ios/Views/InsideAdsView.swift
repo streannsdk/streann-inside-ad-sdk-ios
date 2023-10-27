@@ -8,10 +8,10 @@
 import SwiftUI
 
 public struct InsideAdView: View, InsideAdCallbackDelegate {
-    @Binding var insideAdCallback: String
+    @Binding var insideAdCallback: InsideAdCallbackType
     var screen: String
     
-    public init(screen: String, insideAdCallback: Binding<String>) {
+    public init(screen: String, insideAdCallback: Binding<InsideAdCallbackType>) {
         self._insideAdCallback = insideAdCallback
         self.screen = screen
     }
@@ -26,16 +26,15 @@ public struct InsideAdView: View, InsideAdCallbackDelegate {
 
 extension InsideAdView {
     //Delegate method to show the state of the insideAd player
-    func insideAdCallbackReceived(data: String) {
+    func insideAdCallbackReceived(data: InsideAdCallbackType) {
         insideAdCallback = data
-        print(Logger.log(insideAdCallback))
     }
 }
 
 struct InsideAdView_Previews: PreviewProvider {
     struct Test: View {
         var body: some View {
-            InsideAdView(screen: "Screen", insideAdCallback: .constant("Started"))
+            InsideAdView(screen: "Screen", insideAdCallback: .constant(.UNKNOWN))
         }
     }
     

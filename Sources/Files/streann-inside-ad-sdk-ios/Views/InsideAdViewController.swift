@@ -65,13 +65,15 @@ class InsideAdViewController: UIViewController, ObservableObject {
     // MARK: IMA integration methods
     func requestAds(screen: String) {
         if Constants.ResellerInfo.apiKey == "" {
-            insideAdCallbackDelegate.insideAdCallbackReceived(data: Logger.log("Api Key is required. Please implement the initializeSdk method."))
+            print(Logger.log("Api Key is required. Please implement the initializeSdk method."))
             return
         }
+        
         if Constants.ResellerInfo.baseUrl == "" {
-          insideAdCallbackDelegate.insideAdCallbackReceived(data: Logger.log("Base Url is required. Please implement the initializeSdk method."))
+            print(Logger.log("Base Url is required. Please implement the initializeSdk method."))
           return
         }
+        
         SDKAPI.getGeoIpUrl { geoIpUrl, error in
             if let geoIpUrl {
                 SDKAPI.getGeoIp(fromUrl: geoIpUrl.geoIpUrl) { geoIp, error in
@@ -126,8 +128,8 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     }
     
     func adsLoader(_ loader: IMAAdsLoader, failedWith adErrorData: IMAAdLoadingErrorData) {
-        insideAdCallbackDelegate.insideAdCallbackReceived(data: adErrorData.adError.message ?? "nil")
-        print("Error loading ads: \(adErrorData.adError.message ?? "nil")")
+        insideAdCallbackDelegate.insideAdCallbackReceived(data: convertErrorType(message: adErrorData.adError.message ?? ""))
+        print(Logger.log("\(adErrorData.adError.message ?? "Unknown error")"))
     }
     
     // MARK: - IMAAdsManagerDelegate
@@ -136,14 +138,15 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
             // When the SDK notifies us that ads have been loaded, play them.
             adsManager.start()
         }
-        insideAdCallbackDelegate.insideAdCallbackReceived(data: Logger.log(event.typeString))
+        insideAdCallbackDelegate.insideAdCallbackReceived(data: convertEventType(type: event.type))
+        print(Logger.log(event.typeString))
     }
     
     func adsManager(_ adsManager: IMAAdsManager, didReceive error: IMAAdError) {
         // Something went wrong with the ads manager after ads were loaded. Log the error and play the
         // content.
-        insideAdCallbackDelegate.insideAdCallbackReceived(data: error.message ?? "nil")
-        print("AdsManager error: \(error.message ?? "nil")")
+        insideAdCallbackDelegate.insideAdCallbackReceived(data: convertErrorType(message: error.message ?? ""))
+        print(Logger.log("\(error.message ?? "Unknown error")"))
     }
     
     func adsManagerDidRequestContentPause(_ adsManager: IMAAdsManager) {
@@ -152,5 +155,45 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     
     func adsManagerDidRequestContentResume(_ adsManager: IMAAdsManager) {
         // The SDK is done playing ads (at least for now), so resume the content.
+    }
+}
+
+//Convert IMAAdEventType to InsideAdCallbackTypeModel
+extension InsideAdViewController {
+    private func convertEventType(type: IMAAdEventType) -> InsideAdCallbackType {
+        switch type {
+        case .AD_BREAK_READY: return InsideAdCallbackType.AD_BREAK_READY
+        case .AD_BREAK_FETCH_ERROR: return InsideAdCallbackType.AD_BREAK_FETCH_ERROR
+        case .AD_BREAK_ENDED: return InsideAdCallbackType.AD_BREAK_ENDED
+        case .AD_BREAK_STARTED: return InsideAdCallbackType.AD_BREAK_STARTED
+        case .AD_PERIOD_ENDED: return InsideAdCallbackType.AD_PERIOD_ENDED
+        case .AD_PERIOD_STARTED: return InsideAdCallbackType.AD_PERIOD_STARTED
+        case .ALL_ADS_COMPLETED: return InsideAdCallbackType.ALL_ADS_COMPLETED
+        case .CLICKED: return InsideAdCallbackType.CLICKED
+        case .COMPLETE: return InsideAdCallbackType.COMPLETE
+        case .CUEPOINTS_CHANGED: return InsideAdCallbackType.CUEPOINTS_CHANGED
+        case .ICON_FALLBACK_IMAGE_CLOSED: return InsideAdCallbackType.ICON_FALLBACK_IMAGE_CLOSED
+        case .ICON_TAPPED: return InsideAdCallbackType.ICON_TAPPED
+        case .FIRST_QUARTILE: return InsideAdCallbackType.FIRST_QUARTILE
+        case .LOADED: return InsideAdCallbackType.LOADED
+        case .LOG: return InsideAdCallbackType.LOG
+        case .MIDPOINT: return InsideAdCallbackType.MIDPOINT
+        case .PAUSE: return InsideAdCallbackType.PAUSE
+        case .RESUME: return InsideAdCallbackType.RESUME
+        case .SKIPPED: return InsideAdCallbackType.SKIPPED
+        case .STARTED: return InsideAdCallbackType.STARTED
+        case .STREAM_LOADED: return InsideAdCallbackType.STREAM_LOADED
+        case .STREAM_STARTED: return InsideAdCallbackType.STREAM_STARTED
+        case .TAPPED: return InsideAdCallbackType.TAPPED
+        case .THIRD_QUARTILE: return InsideAdCallbackType.THIRD_QUARTILE
+            
+        @unknown default:
+            return InsideAdCallbackType.UNKNOWN
+        }
+    }
+    
+    private func convertErrorType(message: String) -> InsideAdCallbackType{
+        let errorType = InsideAdCallbackType.IMAAdError(message)
+        return errorType
     }
 }
