@@ -23,12 +23,10 @@ To use this SwiftUI Package in your Xcode project, follow these steps:
     ```
 7. Initialize the SDK with the baseUrl and apiKey in the main Scene. The both parameters are mandatory. Read the StreannInsideAdSDK log in the console for errors:
     ```Swift
-    ...
-        ContentView()
-            .onAppear {
-                StreannInsideAdSdk.initializeSdk(baseUrl: "some base url", apiKey: "some api key")
-            }
-    ...
+    ContentView()
+        .onAppear {
+            StreannInsideAdSdk.initializeSdk(baseUrl: "some base url", apiKey: "some api key")
+        }
     ```
     You could also implement the optional parameters:
     ```Swift
@@ -47,11 +45,63 @@ To use this SwiftUI Package in your Xcode project, follow these steps:
     ```Swift
     var streannInsideAdSdk  = StreannInsideAdSdk()
     ```
-10. Create a State String property to receive the insideAd status callbacks (errors and ad player's state'):
+10. Create a State String property with ".UNKNOWN" status to receive the insideAd status callbacks (errors and ad player's state'):
     ```Swift
-    @State var insideAdCallback = ""
+    @State var insideAdPlayerState: InsideAdCallbackType = .UNKNOWN
+    ```
+    This property can be iterated over for further user actions
+    In a View:
+    ```Swift
+    VStack {
+        switch insideAdPlayerState {
+            case .IMAAdError(let message):
+                Text(message)
+            default:
+                Text("Loaded")
+            }
+    ```
+    In a function:
+    ```Swift
+    func checkStreannInsideAdCallback() {
+        switch insideAdPlayerState {
+        case .COMPLETE:
+        //do something
+        print("Ad completed")
+        default:
+        break
+        }
+    }
     ```
     Callbacks:
+    ```Swift
+    case AD_BREAK_READY
+    case AD_BREAK_FETCH_ERROR
+    case AD_BREAK_ENDED
+    case AD_BREAK_STARTED
+    case AD_PERIOD_ENDED
+    case AD_PERIOD_STARTED
+    case ALL_ADS_COMPLETED
+    case CLICKED
+    case COMPLETE
+    case CUEPOINTS_CHANGED
+    case ICON_FALLBACK_IMAGE_CLOSED
+    case ICON_TAPPED
+    case FIRST_QUARTILE
+    case LOADED
+    case LOG
+    case MIDPOINT
+    case PAUSE
+    case RESUME
+    case SKIPPED
+    case STARTED
+    case STREAM_LOADED
+    case STREAM_STARTED
+    case TAPPED
+    case THIRD_QUARTILE
+    case UNKNOWN
+    case IMAAdError(String) // where the String is the error message
+    ```
+    Alse the callbacks can be read from the console with "StreannInsideAdSDK" prefix: 
     ```Swift
     "StreannInsideAdSDK: Started"
     "StreannInsideAdSDK: Loaded"
