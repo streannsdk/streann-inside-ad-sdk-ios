@@ -21,13 +21,13 @@ class InsideAdsPlayerTimer: ObservableObject {
         self.timer.invalidate()
         self.counter = 0
         self.timer = Timer.scheduledTimer(withTimeInterval: 1.0,
-                                                   repeats: true) { [unowned self] _ in
-            self.counter += 1
-            print("timerValue input \(self.counter)")
-            if self.counter == self.insideAdsPlayerIntervalInMinutes {
-                self.showAd.toggle()
-                self.reset()
-                self.start()
+                                                   repeats: true) { [weak self] _ in
+            self?.counter += 1
+            print("timerValue input \(self?.counter)")
+            if self?.counter == self?.insideAdsPlayerIntervalInMinutes {
+                self?.showAd.toggle()
+                self?.reset()
+                self?.start()
             }
         }
     }
