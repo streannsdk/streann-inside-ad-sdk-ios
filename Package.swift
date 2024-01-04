@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "streann-inside-ad-sdk-ios",
     platforms: [
-        .iOS(.v14),
+        .iOS(.v15),
     ],
     products: [
         .library(
