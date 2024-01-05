@@ -7,6 +7,10 @@
 
 import SwiftUI
 
+protocol InsideAdCallbackDelegate {
+    func insideAdCallbackReceived(data: InsideAdCallbackType)
+}
+
 public class InsideAdSdk {
     public func initializeSdk(baseUrl: String,
                               apiKey: String,
