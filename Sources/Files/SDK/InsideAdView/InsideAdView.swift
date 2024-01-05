@@ -11,88 +11,48 @@ import UIKit
 import AVFoundation
 import WebKit
 
-protocol InsideAdCallbackDelegate {
-    func insideAdCallbackReceived(data: InsideAdCallbackType)
-}
-
 public struct InsideAdView: View, InsideAdCallbackDelegate {
 //    @Environment(\.dismiss) var dismiss
     
     @Binding var insideAdCallback: InsideAdCallbackType
     var campaignDelegate: CampaignDelegate?
-    var insideAdsPlayerIntervalInMinutes: Int
     var screen: String
     var viewSize: CGSize
-    @StateObject var insideAdsPlayerTimer = InsideAdsPlayerTimer(insideAdsPlayerIntervalInMinutes: 15)
     
     @State var loadingAderror = false
     @State var reload = false
 
-     public init(screen: String, insideAdCallback: Binding<InsideAdCallbackType>, campaignDelegate: CampaignDelegate? = nil, insideAdsPlayerIntervalInMinutes: Int, viewSize:CGSize) {
+     public init(screen: String, insideAdCallback: Binding<InsideAdCallbackType>, campaignDelegate: CampaignDelegate? = nil, viewSize:CGSize) {
         _insideAdCallback = insideAdCallback
         self.campaignDelegate = campaignDelegate
         self.screen = screen
         self.viewSize = viewSize
-        self.insideAdsPlayerIntervalInMinutes = insideAdsPlayerIntervalInMinutes
     }
     
     public var body: some View {
-        //        if insideAdsPlayerTimer.counter == insideAdsPlayerIntervalInMinutes {
-//        if insideAdCallback != .ALL_ADS_COMPLETED && !loadingAderror || insideAdsPlayerTimer.showAd {
-            //            if showAd {
+
             GeometryReader { geo in
                 InsideAdViewWrapper(screen: screen, parent: self, viewSize: viewSize) //geo.size
-                //            if case let .IMAAdError(string) = insideAdCallback {
-                        //              //              insideAdsPlayerTimer.showAd = false
-                        //              insideAdsPlayerTimer.stop()
-                        //              insideAdsPlayerTimer.start()
-                        //              print(“errorString value \(string)“)
-                        //            }
-                        //          })
             }
-            .onAppear(perform: {
-                insideAdsPlayerTimer.start()
-            })
-//            .onReceive(insideAdsPlayerTimer.$showAd, perform: { timer in
-//                print("timer publisher \(timer)")
-//                insideAdsPlayerTimer.reset()
-//                insideAdsPlayerTimer.start()
-//                loadingAderror = false
-//                insideAdsPlayerTimer.showAd = false
-//            })
             .onChange(of: insideAdCallback, perform: { value in
                 if value == .STARTED {
                     NotificationCenter.post(name: .AdsContentView_setFullSize)
                 }
                 else if value == .ALL_ADS_COMPLETED {
                     NotificationCenter.post(name: .AdsContentView_setZeroSize)
-                    insideAdsPlayerTimer.showAd = false
+                    NotificationCenter.post(name: .AdsContentView_startTimer)
 //                    self.dismiss()
                 }
                 print("STARTED \(value)")
                 insideAdCallback = value
-                //            }
+                 
                 if case let .IMAAdError(string) = insideAdCallback {
                     if !string.isEmpty {
                         loadingAderror = true
-                        insideAdsPlayerTimer.showAd = false
-//                        self.dismiss()
+                        //self.dismiss()
                     }
-                    
-//                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-//                        loadingAderror = false
-//                        print("STARTED \(value)RELOADED")
-//                    }
                 }
             })
-//            .task {
-//                if case let .IMAAdError(string) = insideAdCallback {
-//                    if !string.isEmpty {
-//                        insideAdsPlayerTimer.showAd = false
-//                    }
-//                }
-//            }
-//        }
     }
 }
 
@@ -105,7 +65,6 @@ extension InsideAdView {
 }
 
 struct InsideAdViewWrapper: UIViewControllerRepresentable {
-//    @Binding var showAd: Bool
 //    @Binding var errorLoadingAds: Bool
     var screen: String
     let parent: InsideAdView
@@ -215,6 +174,8 @@ class InsideAdViewController: UIViewController, ObservableObject {
             print(Logger.log(errorMsg))
             insideAdCallbackDelegate.insideAdCallbackReceived(data: .IMAAdError(errorMsg))
         }
+         
+        Constants.CampaignInfo.intervalInMinutes = nil
         
         SDKAPI.getGeoIpUrl { geoIpUrl, error in
             if let geoIpUrl {
@@ -229,7 +190,13 @@ class InsideAdViewController: UIViewController, ObservableObject {
 //                                    let url = "https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/single_ad_samples&sz=640x480&cust_params=sample_ct%3Dlinear&ciu_szs=300x250%2C728x90&gdfp_req=1&output=vast&unviewed_position_start=1&env=vp&impl=s&correlator="
      
                                     let activeCampaign = campaigns.getActiveCampaign()
-                                    let activeInsideAd = activeCampaign?.placements?.getInsideAdByPlacement(screen: screen)
+                                    Constants.CampaignInfo.intervalInMinutes = activeCampaign?.intervalInMinutes
+                                     
+                                    let activeInsideAdAndPlacement = activeCampaign?.placements?.getInsideAdByPlacement(screen: screen)
+                                     
+                                     let activeInsideAd = activeInsideAdAndPlacement?.0
+                                     let activePlacement = activeInsideAdAndPlacement?.1
+                                     
                                     let url = activeInsideAd?.url
                                     
                                     if let url = url{
@@ -247,7 +214,12 @@ class InsideAdViewController: UIViewController, ObservableObject {
                                                 adDisplayContainer: adDisplayContainer,
                                                 contentPlayhead: self.contentPlayhead,
                                                 userContext: nil)
-                                            self.adsLoader.requestAds(with: request)
+                                            
+                                             let startAfterSeconds:CGFloat = CGFloat(activePlacement?.startAfterSeconds ?? 0)
+                                             
+                                             DispatchQueue.main.asyncAfter(deadline: .now() + startAfterSeconds) {[weak self] in
+                                                  self?.adsLoader.requestAds(with: request)
+                                             }
                                         }
                                     }
                                 }

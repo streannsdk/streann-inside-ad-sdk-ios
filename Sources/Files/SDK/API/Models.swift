@@ -159,8 +159,9 @@ extension Array where Array.Element == TimePeriod{
 
 extension Array where Array.Element == Placement{
     
-    func getInsideAdByPlacement(screen: String) -> InsideAd?{
+    func getInsideAdByPlacement(screen: String) -> (InsideAd?, Placement?){
         var activeInsideAd: InsideAd? = nil
+        var activePlacement: Placement? = nil
         
         let filteredPlacements = self.filter{
             if screen.isEmpty {
@@ -177,9 +178,17 @@ extension Array where Array.Element == Placement{
             }else{
                 activeInsideAd = filteredPlacements.first?.ads?.sortByWeignt().first
             }
+            
+            if let adId = activeInsideAd?.id{
+                activePlacement = filteredPlacements.findBy(adId: adId)
+            }
         }
         
-        return activeInsideAd
+        return (activeInsideAd, activePlacement)
+    }
+    
+    func findBy(adId: String) -> Placement?{
+        self.filter { ($0.ads ?? []).findBy(adId: adId) != nil }.first
     }
 }
 
@@ -187,5 +196,9 @@ extension Array where Array.Element == InsideAd{
     
     func sortByWeignt() -> [InsideAd]{
         return self.sorted(by: { ($0.weight ?? -1000) > ($1.weight ?? -1000) })
+    }
+    
+    func findBy(adId: String) -> InsideAd?{
+        return self.filter { $0.id == adId }.first
     }
 }

@@ -23,6 +23,11 @@ struct Constants {
       static var storeUrl = ""
       static var descriptionUrl = ""
       static var appDomain = ""
+      static var intervalInMinutes: Int = 2
+    }
+    
+    struct CampaignInfo {
+        static var intervalInMinutes: Int? = nil
     }
     
     struct UserInfo {
