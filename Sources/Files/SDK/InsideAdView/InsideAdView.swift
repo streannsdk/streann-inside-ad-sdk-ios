@@ -12,7 +12,7 @@ protocol InsideAdCallbackDelegate {
 }
 
 public struct InsideAdView: View, InsideAdCallbackDelegate {
-    @Environment(\.dismiss) var dismiss
+//    @Environment(\.dismiss) var dismiss
     
     @Binding var insideAdCallback: InsideAdCallbackType
     var screen: String
@@ -63,7 +63,7 @@ public struct InsideAdView: View, InsideAdCallbackDelegate {
                 else if value == .ALL_ADS_COMPLETED {
                     NotificationCenter.post(name: .AdsContentView_setZeroSize)
                     NotificationCenter.post(name: .AdsContentView_startTimer)
-                    self.dismiss()
+//                    self.dismiss()
                 }
                 print("insideAdCallback \(value)")
                 insideAdCallback = value
