@@ -15,6 +15,13 @@ extension DateFormatter {
         return dateFormatter
     }()
     
+    static let cc_dateFormater_server2: DateFormatter = {
+        var dateFormatter = DateFormatter()
+        dateFormatter.timeZone = TimeZone.init(secondsFromGMT: 0)
+        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
+        return dateFormatter
+    }()
+    
     static let cc_dateFormater_server_short: DateFormatter = {
         var dateFormatter = DateFormatter()
         dateFormatter.timeZone = TimeZone.init(secondsFromGMT: 0)
@@ -49,7 +56,7 @@ extension Date {
 extension JSONDecoder {
     static let shared: JSONDecoder = {
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategyFormatters = [DateFormatter.cc_dateFormater_server, DateFormatter.cc_dateFormater_server_short, DateFormatter.cc_dateFormater_local_time]
+        decoder.dateDecodingStrategyFormatters = [DateFormatter.cc_dateFormater_server, DateFormatter.cc_dateFormater_server2, DateFormatter.cc_dateFormater_server_short, DateFormatter.cc_dateFormater_local_time]
         return decoder
     }()
     
@@ -95,3 +102,4 @@ extension Bundle {
         return loaded
     }
 }
+

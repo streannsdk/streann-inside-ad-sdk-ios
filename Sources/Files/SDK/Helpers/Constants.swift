@@ -24,6 +24,7 @@ struct Constants {
       static var descriptionUrl = ""
       static var appDomain = ""
       static var intervalInMinutes: Int = 2
+      static var isAdMuted: Bool = false
     }
     
     struct CampaignInfo {
@@ -69,6 +70,7 @@ public enum InsideAdCallbackType: Equatable, CaseIterable {
     case TAPPED
     case THIRD_QUARTILE
     case UNKNOWN
+    case STOP
     case IMAAdError(String)
     
     public static var allCases: [InsideAdCallbackType] {
@@ -98,12 +100,8 @@ public enum InsideAdCallbackType: Equatable, CaseIterable {
             .TAPPED,
             .THIRD_QUARTILE,
             .UNKNOWN,
+            .STOP,
             .IMAAdError("")
         ]
     }
-}
-
-public protocol CampaignDelegate{
-    func onSuccess(campaigns: [CampaignAppModel]?)
-    func onError(error: String)
 }

@@ -53,6 +53,10 @@ class GeoIp: Codable {
 
 class GeoIpUrl: Codable {
   var geoIpUrl: String
+    
+    init(geoIpUrl: String) {
+        self.geoIpUrl = geoIpUrl
+    }
 }
 
 public class CampaignAppModel: Codable {
@@ -71,20 +75,40 @@ class Placement: Codable {
     var id: String?
     var name: String?
     var viewType: String?
-    var screens: [String]?
+    var tags: [String]?
+    var ads: [InsideAd]?
+    var properties: PlacementProperties?
+}
+
+class PlacementProperties: Codable {
     var startAfterSeconds: Int?
     var showCloseButtonAfterSeconds: Int?
-    var ads: [InsideAd]?
-//    var properties: [String : Double]?
 }
 
 class InsideAd: Codable {
     var id: String?
     var name: String?
     var weight: Int?
-    var adType: String?
+    var adType: AdType?
     var url: String?
     //var durationInSeconds: Int?
+}
+
+enum AdType: String, Codable {
+    case VAST
+    case LOCAL_IMAGE
+    case LOCAL_VIDEO
+    case unsupported
+    
+    init(fromRawValue: String) {
+        self = AdType(rawValue: fromRawValue) ?? .unsupported
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let string = try container.decode(String.self)
+        self = AdType(rawValue: string) ?? .unsupported
+    }
 }
 
 class TimePeriod: Codable {
@@ -116,7 +140,7 @@ extension Array where Array.Element == CampaignAppModel{
     
     func getActiveCampaign() -> CampaignAppModel?{
         var activeCampaigns = self.filterCampaignsByDate()
-        activeCampaigns = activeCampaigns.filterCampaignsByTimePeriod()
+        activeCampaigns = activeCampaigns.filterCampaignsByTimePeriod() ?? activeCampaigns
         activeCampaigns = activeCampaigns.sortByWeignt()
         
         return activeCampaigns.first ?? nil
@@ -128,7 +152,7 @@ extension Array where Array.Element == CampaignAppModel{
         return activeCampaigns
     }
     
-    func filterCampaignsByTimePeriod() -> [CampaignAppModel]{
+    func filterCampaignsByTimePeriod() -> [CampaignAppModel]?{
         let activeCampaigns = self.filter { $0.timePeriods == nil || ($0.timePeriods?.filterByTimeAndWeekDay().count ?? 0) > 0 }
         return activeCampaigns
     }
@@ -165,9 +189,9 @@ extension Array where Array.Element == Placement{
         
         let filteredPlacements = self.filter{
             if screen.isEmpty {
-                $0.screens?.isEmpty ?? true
+                $0.tags?.isEmpty ?? true
             }else{
-                $0.screens?.contains(screen) ?? false
+                $0.tags?.contains(screen) ?? false
             }
         }
         

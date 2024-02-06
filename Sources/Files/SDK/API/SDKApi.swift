@@ -7,7 +7,13 @@
 
 import Foundation
 
-class SDKAPI: NSObject {
+protocol SDKAPIProtocol {
+    static func getGeoIpUrl(completionHandler: @escaping(_ getGeoIpUrl: GeoIpUrl?, _ error: Error?) -> Void)
+    static func getGeoIp(fromUrl: String, completionHandler: @escaping(_ geoModel: GeoIp?, _ error: Error?) -> Void)
+    static func getCampaigns(countryCode: String, completionHandler: @escaping(_ campaignAppModel: [CampaignAppModel]?, _ error: Error?) -> Void)
+}
+
+class SDKAPI: SDKAPIProtocol {
     //Get GeoIpUrl
     static func getGeoIpUrl(completionHandler: @escaping(_ getGeoIpUrl: GeoIpUrl?, _ error: Error?) -> Void) {
       guard let url = URL(string: Constants.ResellerInfo.baseUrl + "/v1/geo-ip-config") else {
@@ -68,7 +74,7 @@ class SDKAPI: NSObject {
             }
             do {
                 let dataString = String(data: data, encoding: .utf8)
-                print("getCampaign json \(dataString)")
+                print("getCampaign json \(dataString ?? "")")
                 
                 let campaignAppModel = try JSONDecoder.shared.decode([CampaignAppModel].self, from: data)
                 completionHandler(campaignAppModel, nil)
@@ -78,5 +84,23 @@ class SDKAPI: NSObject {
             }
         }
         task.resume()
+    }
+}
+
+class SDKAPIMock: SDKAPIProtocol {
+    static func getGeoIpUrl(completionHandler: @escaping (GeoIpUrl?, Error?) -> Void) {
+        let geoUrl = GeoIpUrl(geoIpUrl: "https://geoip.streann.com/")
+        completionHandler(geoUrl, nil)
+    }
+    
+    static func getGeoIp(fromUrl: String, completionHandler: @escaping (GeoIp?, Error?) -> Void) {
+        let geoIp:GeoIp = Bundle(for: SDKAPI.self).decode("geo_ip_mock.json")
+        completionHandler(geoIp, nil)
+    }
+    
+    static func getCampaigns(countryCode: String, completionHandler: @escaping ([CampaignAppModel]?, Error?) -> Void) {
+        let campaigns:[CampaignAppModel] = Bundle(for: SDKAPI.self).decode("campaigns_video_mock.json")
+        // campaigns_mock, campaigns_video_mock
+        completionHandler(campaigns, nil)
     }
 }
