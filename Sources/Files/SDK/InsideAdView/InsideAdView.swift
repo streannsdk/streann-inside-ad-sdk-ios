@@ -32,7 +32,7 @@ public struct InsideAdView: View, InsideAdCallbackDelegate {
     }
     
     public var body: some View {
-            GeometryReader { geo in
+            VStack {
                  if let activeInsideAd = viewModel.activeInsideAd {
                       if activeInsideAd.adType == .VAST {
                            InsideAdViewWrapper(screen: screen, parent: self, viewSize: viewSize,
