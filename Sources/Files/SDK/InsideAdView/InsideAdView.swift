@@ -12,9 +12,8 @@ protocol InsideAdCallbackDelegate {
 }
 
 public struct InsideAdView: View, InsideAdCallbackDelegate {
-//    @Environment(\.dismiss) var dismiss
-    
     @Binding var insideAdCallback: InsideAdCallbackType
+    
     var screen: String
     var viewSize: CGSize
     
@@ -33,7 +32,6 @@ public struct InsideAdView: View, InsideAdCallbackDelegate {
     }
     
     public var body: some View {
-
             GeometryReader { geo in
                  if let activeInsideAd = viewModel.activeInsideAd {
                       if activeInsideAd.adType == .VAST {
@@ -42,6 +40,9 @@ public struct InsideAdView: View, InsideAdCallbackDelegate {
                                                activePlacement: $viewModel.activePlacement,
                                                geoIp: $viewModel.geoIp) //geo.size
                       }
+                     else if activeInsideAd.adType == .BANNER {
+                         BannerView(insideAdCallback: $insideAdCallback, insideAdViewModel: viewModel)
+                     }
                       else if activeInsideAd.adType == .LOCAL_VIDEO{
                            LocalVideoPlayerView(url: URL(string: activeInsideAd.url!)!,
                                                 insideAdCallback: $insideAdCallback)
@@ -63,7 +64,6 @@ public struct InsideAdView: View, InsideAdCallbackDelegate {
                 else if value == .ALL_ADS_COMPLETED {
                     NotificationCenter.post(name: .AdsContentView_setZeroSize)
                     NotificationCenter.post(name: .AdsContentView_startTimer)
-//                    self.dismiss()
                 }
                 print("insideAdCallback \(value)")
                 insideAdCallback = value

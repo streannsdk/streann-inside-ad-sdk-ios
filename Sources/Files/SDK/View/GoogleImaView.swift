@@ -152,7 +152,7 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     }
     
     func adsLoader(_ loader: IMAAdsLoader, failedWith adErrorData: IMAAdLoadingErrorData) {
-        insideAdCallbackDelegate.insideAdCallbackReceived(data: convertErrorType(message: adErrorData.adError.message ?? ""))
+        insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: adErrorData.adError.message ?? ""))
         //        self.view.removeFromSuperview()
         print(Logger.log("\(adErrorData.adError.message ?? "Unknown error")"))
     }
@@ -165,14 +165,14 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
             // When the SDK notifies us that ads have been loaded, play them.
             adsManager.start()
         }
-        insideAdCallbackDelegate.insideAdCallbackReceived(data: convertEventType(type: event.type))
+        insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertEventType(type: event.type))
         print(Logger.log(event.typeString))
     }
     
     func adsManager(_ adsManager: IMAAdsManager, didReceive error: IMAAdError) {
         // Something went wrong with the ads manager after ads were loaded. Log the error and play the
         // content.
-        insideAdCallbackDelegate.insideAdCallbackReceived(data: convertErrorType(message: error.message ?? ""))
+        insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: error.message ?? ""))
         //        self.view.removeFromSuperview()
         print(Logger.log("\(error.message ?? "Unknown error")"))
     }
@@ -192,49 +192,9 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     func adsManagerAdDidStartBuffering(_ adsManager: IMAAdsManager) {
         print("buffering started")
     }
-    
-    func convertEventType(type: IMAAdEventType) -> InsideAdCallbackType {
-        switch type {
-        case .AD_BREAK_READY: return InsideAdCallbackType.AD_BREAK_READY
-        case .AD_BREAK_FETCH_ERROR: return InsideAdCallbackType.AD_BREAK_FETCH_ERROR
-        case .AD_BREAK_ENDED: return InsideAdCallbackType.AD_BREAK_ENDED
-        case .AD_BREAK_STARTED: return InsideAdCallbackType.AD_BREAK_STARTED
-        case .AD_PERIOD_ENDED: return InsideAdCallbackType.AD_PERIOD_ENDED
-        case .AD_PERIOD_STARTED: return InsideAdCallbackType.AD_PERIOD_STARTED
-        case .ALL_ADS_COMPLETED: return InsideAdCallbackType.ALL_ADS_COMPLETED
-        case .CLICKED: return InsideAdCallbackType.CLICKED
-        case .COMPLETE: return InsideAdCallbackType.COMPLETE
-        case .CUEPOINTS_CHANGED: return InsideAdCallbackType.CUEPOINTS_CHANGED
-        case .ICON_FALLBACK_IMAGE_CLOSED: return InsideAdCallbackType.ICON_FALLBACK_IMAGE_CLOSED
-        case .ICON_TAPPED: return InsideAdCallbackType.ICON_TAPPED
-        case .FIRST_QUARTILE: return InsideAdCallbackType.FIRST_QUARTILE
-        case .LOADED: return InsideAdCallbackType.LOADED
-        case .LOG: return InsideAdCallbackType.LOG
-        case .MIDPOINT: return InsideAdCallbackType.MIDPOINT
-        case .PAUSE: return InsideAdCallbackType.PAUSE
-        case .RESUME: return InsideAdCallbackType.RESUME
-        case .SKIPPED: return InsideAdCallbackType.SKIPPED
-        case .STARTED: return InsideAdCallbackType.STARTED
-        case .STREAM_LOADED: return InsideAdCallbackType.STREAM_LOADED
-        case .STREAM_STARTED: return InsideAdCallbackType.STREAM_STARTED
-        case .TAPPED: return InsideAdCallbackType.TAPPED
-        case .THIRD_QUARTILE: return InsideAdCallbackType.THIRD_QUARTILE
-            
-        @unknown default:
-            return InsideAdCallbackType.UNKNOWN
-        }
-    }
-    
-    private func convertErrorType(message: String) -> InsideAdCallbackType{
-        let errorType = InsideAdCallbackType.IMAAdError(message)
-        NotificationCenter.post(name: .AdsContentView_setZeroSize)
-//        print(errorType)
-        return errorType
-    }
 }
 
 struct InsideAdViewWrapper: UIViewControllerRepresentable {
-//    @Binding var errorLoadingAds: Bool
     var screen: String
     let parent: InsideAdView
     var viewSize: CGSize
@@ -242,9 +202,7 @@ struct InsideAdViewWrapper: UIViewControllerRepresentable {
     @Binding var insideAd: InsideAd?
     @Binding var activePlacement: Placement?
     @Binding var geoIp: GeoIp?
-    
-//    @Binding var callback: InsideAdCallbackType
-    
+        
     func makeUIViewController(context: Context) -> InsideAdViewController {
         let controller = InsideAdViewController(insideAdCallbackDelegate: parent)
         controller.screen = screen

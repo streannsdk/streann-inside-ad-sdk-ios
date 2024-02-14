@@ -64,11 +64,15 @@ public class CampaignAppModel: Codable {
     var name: String?
     var startDate: Date?
     var endDate: Date?
+    var platforms: [String]?
     var intervalInMinutes: Int?
+    var allowedCountries: [String]?
+    var restrictedCountries: [String]?
     var weight: Int?
     var timePeriods: [TimePeriod]?
     //var properties: [String : Int]?
     var placements: [Placement]?
+    var properties: PlacementProperties?
 }
 
 class Placement: Codable {
@@ -83,6 +87,8 @@ class Placement: Codable {
 class PlacementProperties: Codable {
     var startAfterSeconds: Int?
     var showCloseButtonAfterSeconds: Int?
+    var intervalInMinutes: String?
+    var webSettings: WebSettings?
 }
 
 class InsideAd: Codable {
@@ -90,14 +96,35 @@ class InsideAd: Codable {
     var name: String?
     var weight: Int?
     var adType: AdType?
+    var resellerID: String?
+    var fallBackID: String?
     var url: String?
+    var properties: BannerAdProperties?
+    var fallBack: String?
     //var durationInSeconds: Int?
+}
+
+class BannerAdProperties: Codable {
+    var durationInSeconds: Int?
+    var sizes: [Size]?
+}
+
+class Size: Codable {
+    var width: Int?
+    var height: Int?
+}
+
+class WebSettings: Codable {
+    var advancedScript: String?
+    var styles: String?
+    var screen: [String]?
 }
 
 enum AdType: String, Codable {
     case VAST
     case LOCAL_IMAGE
     case LOCAL_VIDEO
+    case BANNER
     case unsupported
     
     init(fromRawValue: String) {
