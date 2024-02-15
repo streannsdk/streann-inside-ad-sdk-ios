@@ -3,6 +3,8 @@
 
 import PackageDescription
 
+let googleMobileAdsAlias = "GoogleMobileAdsAlias"
+
 let package = Package(
     name: "streann-inside-ad-sdk-ios",
     platforms: [
@@ -11,7 +13,7 @@ let package = Package(
     products: [
         .library(
             name: "streann-inside-ad-sdk-ios",
-            targets: ["streann-inside-ad-sdk-ios", "GoogleInteractiveMediaAds", "GoogleMobileAds"]),
+            targets: ["streann-inside-ad-sdk-ios", "GoogleInteractiveMediaAds", googleMobileAdsAlias]),
     ],
     targets: [
         .binaryTarget(
@@ -19,7 +21,7 @@ let package = Package(
             path: "./Resources/GoogleInteractiveMediaAds.zip"
         ),
         .binaryTarget(
-                    name: "GoogleMobileAds",
+                    name: googleMobileAdsAlias,
                     path: "./Resources/GoogleMobileAds.zip"
                 ),
         .target(
