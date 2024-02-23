@@ -12,7 +12,7 @@ import GoogleMobileAds
 struct BannerView: View {
     @State var height: CGFloat = 0
     @State var width: CGFloat = 0
-    
+
     var insideAdViewModel: InsideAdViewModel
     let parent: InsideAdView
     
@@ -43,8 +43,9 @@ struct BannerView: View {
 struct BannerAd: UIViewControllerRepresentable {
     var insideAdViewModel: InsideAdViewModel
     let parent: InsideAdView
+    
     func makeUIViewController(context: Context) -> BannerAdViewController {
-        return BannerAdViewController(viewModel: insideAdViewModel)
+        return BannerAdViewController(viewModel: insideAdViewModel, insideAdCallbackDelegate: parent)
     }
     
     func updateUIViewController(_ uiViewController: BannerAdViewController, context: Context) {
@@ -55,9 +56,11 @@ struct BannerAd: UIViewControllerRepresentable {
 class BannerAdViewController: UIViewController {
     var viewModel: InsideAdViewModel
     var adSizes = [NSValue]()
+    var insideAdCallbackDelegate: InsideAdCallbackDelegate
     
-    init(viewModel: InsideAdViewModel) {
+    init(viewModel: InsideAdViewModel, insideAdCallbackDelegate: InsideAdCallbackDelegate) {
         self.viewModel = viewModel
+        self.insideAdCallbackDelegate = insideAdCallbackDelegate
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -108,17 +111,19 @@ extension BannerAdViewController: GADBannerViewDelegate, GADAdSizeDelegate {
     }
     
     func bannerViewDidReceiveAd(_ bannerView: GADBannerView) {
+        insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertEventType(type: .LOADED))
         view.addSubview(bannerView)
         print("bannerViewDidReceiveAd")
         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(viewModel.activeInsideAd?.properties?.durationInSeconds ?? 10)) {
             bannerView.removeFromSuperview()
+            self.insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertEventType(type: .ALL_ADS_COMPLETED))
         }
     }
     
     func bannerView(_ bannerView: GADBannerView, didFailToReceiveAdWithError error: Error) {
         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds((Int(viewModel.activeCampaign?.properties?.intervalInMinutes ?? "1") ?? 1 * 60) + (viewModel.activeInsideAd?.properties?.durationInSeconds ?? 1))) {
             NotificationCenter.post(name: .AdsContentView_startTimer)
-            print("bannerViewErrorReceivedNewReqeustSent")
+            self.insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: error.localizedDescription ?? ""))
         }
     }
     

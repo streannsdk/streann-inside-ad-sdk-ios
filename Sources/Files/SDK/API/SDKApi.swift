@@ -86,21 +86,3 @@ class SDKAPI: SDKAPIProtocol {
         task.resume()
     }
 }
-
-class SDKAPIMock: SDKAPIProtocol {
-    static func getGeoIpUrl(completionHandler: @escaping (GeoIpUrl?, Error?) -> Void) {
-        let geoUrl = GeoIpUrl(geoIpUrl: "https://geoip.streann.com/")
-        completionHandler(geoUrl, nil)
-    }
-    
-    static func getGeoIp(fromUrl: String, completionHandler: @escaping (GeoIp?, Error?) -> Void) {
-        let geoIp:GeoIp = Bundle(for: SDKAPI.self).decode("geo_ip_mock.json")
-        completionHandler(geoIp, nil)
-    }
-    
-    static func getCampaigns(countryCode: String, completionHandler: @escaping ([CampaignAppModel]?, Error?) -> Void) {
-        let campaigns:[CampaignAppModel] = Bundle(for: SDKAPI.self).decode("campaigns_video_mock.json")
-        // campaigns_mock, campaigns_video_mock
-        completionHandler(campaigns, nil)
-    }
-}
