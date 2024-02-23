@@ -9,18 +9,19 @@ import UIKit
 import SwiftUI
 import GoogleMobileAds
 
-struct BannerView: View, InsideAdCallbackDelegate {
+struct BannerView: View {
     @State var height: CGFloat = 0
     @State var width: CGFloat = 0
-    @Binding var insideAdCallback: InsideAdCallbackType
+    
     var insideAdViewModel: InsideAdViewModel
+    let parent: InsideAdView
     
     public var body: some View {
-            BannerAd(insideAdViewModel: insideAdViewModel, parent: self)
-                .frame(width: width, height: height, alignment: .trailing)
-                .onAppear {
-                    setFrame()
-                }
+        BannerAd(insideAdViewModel: insideAdViewModel, parent: parent)
+            .frame(width: width, height: height, alignment: .trailing)
+            .onAppear {
+                setFrame()
+            }
     }
     
     func setFrame() {
@@ -37,33 +38,26 @@ struct BannerView: View, InsideAdCallbackDelegate {
         self.width = adSize.size.width
         self.height = adSize.size.height
     }
-    
-    func insideAdCallbackReceived(data: InsideAdCallbackType) {
-        insideAdCallback = data
-    }
 }
 
 struct BannerAd: UIViewControllerRepresentable {
     var insideAdViewModel: InsideAdViewModel
-    let parent: BannerView
-    
-    func makeUIViewController(context: Context) -> BannerAdVC {
-        return BannerAdVC(viewModel: insideAdViewModel, insideAdCallbackDelegate: parent)
+    let parent: InsideAdView
+    func makeUIViewController(context: Context) -> BannerAdViewController {
+        return BannerAdViewController(viewModel: insideAdViewModel)
     }
-
-    func updateUIViewController(_ uiViewController: BannerAdVC, context: Context) {
+    
+    func updateUIViewController(_ uiViewController: BannerAdViewController, context: Context) {
         
     }
 }
 
-class BannerAdVC: UIViewController {
+class BannerAdViewController: UIViewController {
     var viewModel: InsideAdViewModel
-    var insideAdCallbackDelegate: InsideAdCallbackDelegate
     var adSizes = [NSValue]()
     
-    init(viewModel: InsideAdViewModel, insideAdCallbackDelegate: InsideAdCallbackDelegate) {
+    init(viewModel: InsideAdViewModel) {
         self.viewModel = viewModel
-        self.insideAdCallbackDelegate = insideAdCallbackDelegate
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -72,28 +66,24 @@ class BannerAdVC: UIViewController {
     }
     
     var bannerView: GAMBannerView = GAMBannerView(adSize: GADAdSizeFullBanner)
-
+    
     override func viewDidLoad() {
-       setupBannerView()
-    }
-
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
+        setupBannerView()
         loadBannerAd()
     }
-
+    
     private func setupBannerView() {
         bannerView.adUnitID = viewModel.activeInsideAd?.url
-               bannerView.rootViewController = self
-               bannerView.delegate = self
-               bannerView.adSizeDelegate = self
-               bannerView.load(GADRequest())
+        bannerView.rootViewController = self
+        bannerView.delegate = self
+        bannerView.adSizeDelegate = self
+        bannerView.load(GADRequest())
     }
-
+    
     private func loadBannerAd() {
         let frame = view.frame.inset(by: view.safeAreaInsets)
         let viewWidth = frame.size.width
-
+        
         bannerView.adSize = GADCurrentOrientationAnchoredAdaptiveBannerAdSizeWithWidth(viewWidth)
         addValidSizesToBannerView()
         bannerView.validAdSizes = adSizes
@@ -112,7 +102,7 @@ class BannerAdVC: UIViewController {
     }
 }
 
-extension BannerAdVC: GADBannerViewDelegate, GADAdSizeDelegate {
+extension BannerAdViewController: GADBannerViewDelegate, GADAdSizeDelegate {
     func adView(_ bannerView: GADBannerView, willChangeAdSizeTo size: GADAdSize) {
         print("bannerViewDidRecordImpression willChangeAdSizeTo size: GADAdSize \(size)")
     }
@@ -122,34 +112,32 @@ extension BannerAdVC: GADBannerViewDelegate, GADAdSizeDelegate {
         print("bannerViewDidReceiveAd")
         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(viewModel.activeInsideAd?.properties?.durationInSeconds ?? 10)) {
             bannerView.removeFromSuperview()
-            
         }
     }
-
+    
     func bannerView(_ bannerView: GADBannerView, didFailToReceiveAdWithError error: Error) {
-        insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: error.localizedDescription ))
         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds((Int(viewModel.activeCampaign?.properties?.intervalInMinutes ?? "1") ?? 1 * 60) + (viewModel.activeInsideAd?.properties?.durationInSeconds ?? 1))) {
             NotificationCenter.post(name: .AdsContentView_startTimer)
             print("bannerViewErrorReceivedNewReqeustSent")
         }
     }
-
+    
     func bannerViewDidRecordImpression(_ bannerView: GADBannerView) {
         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds((Int(viewModel.activeCampaign?.properties?.intervalInMinutes ?? "1") ?? 1 * 60) + (viewModel.activeInsideAd?.properties?.durationInSeconds ?? 1))) {
             NotificationCenter.post(name: .AdsContentView_startTimer)
             print("bannerViewDidRecordImpression")
         }
     }
-
+    
     func bannerViewWillPresentScreen(_ bannerView: GADBannerView) {
-      print("bannerViewWillPresentScreen")
+        print("bannerViewWillPresentScreen")
     }
-
+    
     func bannerViewWillDismissScreen(_ bannerView: GADBannerView) {
-      print("bannerViewWillDIsmissScreen")
+        print("bannerViewWillDIsmissScreen")
     }
-
+    
     func bannerViewDidDismissScreen(_ bannerView: GADBannerView) {
-      print("bannerViewDidDismissScreen")
+        print("bannerViewDidDismissScreen")
     }
 }

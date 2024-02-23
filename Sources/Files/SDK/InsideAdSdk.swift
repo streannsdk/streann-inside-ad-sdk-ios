@@ -8,7 +8,6 @@
 import SwiftUI
 
 public class InsideAdSdk {
-    
     public init(baseUrl: String,
                 apiKey: String,
                 apiToken: String,
@@ -28,36 +27,27 @@ public class InsideAdSdk {
     }
     
     @ViewBuilder
-//    if loaded {
-    public func insideAdView(screen: String, playerState: Binding<InsideAdCallbackType>, intervalInMinutes: Int? = nil, viewSize:CGSize = CGSize(width: 300, height: 250), isAdMuted: Bool = false) -> some View {
-        AdsContentView(screen: screen, playerState: playerState, intervalInMinutes: intervalInMinutes, viewSize: viewSize, isAdMuted: isAdMuted)
+    public func insideAdView(screen: String, playerState: Binding<InsideAdCallbackType>, isAdMuted: Bool = false) -> some View {
+        AdsContentView(screen: screen, playerState: playerState, isAdMuted: isAdMuted)
     }
-//    }
     
     struct AdsContentView: View {
         var screen: String
         var playerState: Binding<InsideAdCallbackType>
-        var viewSize: CGSize
-        
         @State var adViewId = UUID()
         @State var timerNextAd: Timer? = nil
         
         @State private var adViewHeight: CGFloat = 0
         @State private var adViewWidth: CGFloat = 0
         
-        public init(screen:String, playerState: Binding<InsideAdCallbackType>, intervalInMinutes: Int? = nil, viewSize: CGSize, isAdMuted: Bool) {
+        public init(screen:String, playerState: Binding<InsideAdCallbackType>, isAdMuted: Bool) {
             self.screen = screen
             self.playerState = playerState
-            self.viewSize = viewSize
-            
-            if let intervalInMinutes = intervalInMinutes{
-                Constants.ResellerInfo.intervalInMinutes = intervalInMinutes
-            }
             Constants.ResellerInfo.isAdMuted = isAdMuted
         }
         
         var body: some View {
-            InsideAdView(screen: screen, insideAdCallback: playerState, viewSize: viewSize)
+            InsideAdView(screen: screen, insideAdCallback: playerState)
                 .id(adViewId)
                 .frame(maxWidth: adViewWidth, maxHeight: adViewHeight)
                 .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_setFullSize), perform: { _ in
@@ -74,7 +64,7 @@ public class InsideAdSdk {
                         intervalInMinutes = intervalInMinutesCamp
                     }
                     
-                    if intervalInMinutes > 0 {
+                    if let intervalInMinutes, intervalInMinutes > 0 {
                         print(Logger.log("Timer started for next ad - intervalInMinutes \(intervalInMinutes)"))
                         timerNextAd = Timer.scheduledTimer(withTimeInterval: TimeInterval(intervalInMinutes * 60), repeats: false){ _ in
                             adViewId = UUID()

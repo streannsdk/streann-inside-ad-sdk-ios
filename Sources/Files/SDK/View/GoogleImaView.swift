@@ -33,9 +33,6 @@ class InsideAdViewController: UIViewController, ObservableObject {
     var activePlacement: Placement?
     var geoIp: GeoIp?
     
-//    let insideAdPlayerErrorStateDelegate: InsideAdPlayerErrorStateDelegate
-//    @Published var errorLoadingAds = false
-    
     init(insideAdCallbackDelegate: InsideAdCallbackDelegate) {
         self.insideAdCallbackDelegate = insideAdCallbackDelegate
         super.init(nibName: nil, bundle: nil)
@@ -50,7 +47,6 @@ class InsideAdViewController: UIViewController, ObservableObject {
          super.viewDidLoad()
          
          addImmadPlayerView()
-//         addVolumeButton()
          adsLoader.delegate = self
     }
     
@@ -153,7 +149,6 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     
     func adsLoader(_ loader: IMAAdsLoader, failedWith adErrorData: IMAAdLoadingErrorData) {
         insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: adErrorData.adError.message ?? ""))
-        //        self.view.removeFromSuperview()
         print(Logger.log("\(adErrorData.adError.message ?? "Unknown error")"))
     }
     
@@ -197,7 +192,6 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
 struct InsideAdViewWrapper: UIViewControllerRepresentable {
     var screen: String
     let parent: InsideAdView
-    var viewSize: CGSize
     
     @Binding var insideAd: InsideAd?
     @Binding var activePlacement: Placement?
@@ -206,7 +200,6 @@ struct InsideAdViewWrapper: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> InsideAdViewController {
         let controller = InsideAdViewController(insideAdCallbackDelegate: parent)
         controller.screen = screen
-        controller.viewSize = viewSize
         controller.insideAd = insideAd
         controller.activePlacement = activePlacement
         controller.geoIp = geoIp
