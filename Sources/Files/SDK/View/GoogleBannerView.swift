@@ -121,14 +121,14 @@ extension BannerAdViewController: GADBannerViewDelegate, GADAdSizeDelegate {
     }
     
     func bannerView(_ bannerView: GADBannerView, didFailToReceiveAdWithError error: Error) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds((Int(viewModel.activeCampaign?.properties?.intervalInMinutes ?? "1") ?? 1 * 60) + (viewModel.activeInsideAd?.properties?.durationInSeconds ?? 1))) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(viewModel.activeCampaign?.properties?.intervalInMinutes?.convertMinutesToSeconds() ?? 1 + (viewModel.activeInsideAd?.properties?.durationInSeconds ?? 1))) {
             NotificationCenter.post(name: .AdsContentView_startTimer)
-            self.insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: error.localizedDescription ?? ""))
+            self.insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: error.localizedDescription ))
         }
     }
     
     func bannerViewDidRecordImpression(_ bannerView: GADBannerView) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds((Int(viewModel.activeCampaign?.properties?.intervalInMinutes ?? "1") ?? 1 * 60) + (viewModel.activeInsideAd?.properties?.durationInSeconds ?? 1))) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(viewModel.activeCampaign?.properties?.intervalInMinutes?.convertMinutesToSeconds() ?? 1 + (viewModel.activeInsideAd?.properties?.durationInSeconds ?? 1))) {
             NotificationCenter.post(name: .AdsContentView_startTimer)
             print("bannerViewDidRecordImpression")
         }

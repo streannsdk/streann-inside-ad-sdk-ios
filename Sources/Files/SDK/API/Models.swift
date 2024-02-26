@@ -87,7 +87,7 @@ class Placement: Codable {
 class PlacementProperties: Codable {
     var startAfterSeconds: Int?
     var showCloseButtonAfterSeconds: Int?
-    var intervalInMinutes: String?
+    var intervalInMinutes: Double?
     var webSettings: WebSettings?
 }
 

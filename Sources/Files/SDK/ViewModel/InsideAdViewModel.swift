@@ -61,7 +61,7 @@ class InsideAdViewModel: NSObject, ObservableObject {
                                 let activeCampaign = campaigns.getActiveCampaign()
                                 self?.activeCampaign = activeCampaign
                                 
-                                Constants.CampaignInfo.intervalInMinutes = Int(activeCampaign?.properties?.intervalInMinutes ?? "1")
+                                Constants.CampaignInfo.intervalInMinutes = activeCampaign?.properties?.intervalInMinutes ?? 1
                                 
                                 if let screen = self?.screen {
                                     let activeInsideAdAndPlacement = activeCampaign?.placements?.getInsideAdByPlacement(screen: screen)
