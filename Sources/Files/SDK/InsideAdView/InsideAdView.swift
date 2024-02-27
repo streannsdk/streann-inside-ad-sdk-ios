@@ -31,20 +31,20 @@ public struct InsideAdView: View, InsideAdCallbackDelegate {
           VStack {
                if let activeInsideAd = viewModel.activeInsideAd {
                     if activeInsideAd.adType == .VAST {
-                         InsideAdViewWrapper(screen: screen, parent: self,
-                                             insideAd: $viewModel.activeInsideAd,
-                                             activePlacement: $viewModel.activePlacement,
-                                             geoIp: $viewModel.geoIp) //geo.size
+                        InsideAdViewWrapper(screen: screen, parent: self,
+                                            insideAd: activeInsideAd,
+                                            activePlacement: $viewModel.activePlacement,
+                                            geoIp: $viewModel.geoIp) //geo.size
                     }
-                    else if activeInsideAd.adType == .LOCAL_VIDEO{
-                         LocalVideoPlayerView(url: URL(string: activeInsideAd.url!)!,
-                                              insideAdCallback: $insideAdCallback)
-                    }
+                   else if activeInsideAd.adType == .LOCAL_VIDEO{
+                        LocalVideoPlayerView(insideAd: activeInsideAd,
+                                             insideAdCallback: $insideAdCallback)
+                   }
                     else if activeInsideAd.adType == .BANNER {
                          BannerView(insideAdViewModel: viewModel, parent: self)
                     }
                     else if activeInsideAd.adType == .LOCAL_IMAGE{
-                         EmptyView()
+                        LocalImageView(insideAd: activeInsideAd, insideAdCallback: $insideAdCallback)
                     }
                     else{
                          EmptyView()

@@ -7,38 +7,91 @@
 
 import SwiftUI
 import AVKit
-import Combine
 
 struct LocalVideoPlayerView: View {
-    
+    @Environment(\.openURL) private var openURL
     @StateObject var playerManager: PlayerManager
+    @State private var playerIsMuted = false
+    var insideAd: InsideAd
     
-    public init(url: URL, insideAdCallback: Binding<InsideAdCallbackType>) {
-        self._playerManager = StateObject(wrappedValue: PlayerManager(url: url,
+    public init(insideAd: InsideAd, insideAdCallback: Binding<InsideAdCallbackType>) {
+        self._playerManager = StateObject(wrappedValue: PlayerManager(url: URL(string: insideAd.url ?? "")!,
                                                                       insideAdCallback: insideAdCallback))
+        self.insideAd = insideAd
     }
     
     var body: some View {
         ZStack{
             AVPlayerControllerWrapper(player: playerManager.player)
+                .overlay(alignment: .top){
+                    LinearGradient(colors: [.black.opacity(0.4), .clear],
+                                   startPoint: .top,
+                                   endPoint: .center)
+                    .frame(maxWidth: .infinity, maxHeight: 110)
+                }
             
             VStack{
-                HStack{
-                    Button("X") {
-                        playerManager.stop()
-                    }
-                    
-                    Spacer()
-                    
-                    Button("Mute") {
-                        //
-                    }
-                }
+                topView
                 Spacer()
             }
+            .padding(2)
             .onAppear{
                 playerManager.play()
             }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                playerManager.play()
+            }
+            .onAppear {
+                NotificationCenter.default.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main) { _ in
+                }
+            }
+            .onDisappear {
+                NotificationCenter.default.removeObserver(self, name: UIApplication.willEnterForegroundNotification, object: nil)
+            }
+        }
+        .hide(if: playerManager.player.currentItem?.status != .readyToPlay)
+    }
+}
+
+//Views
+extension LocalVideoPlayerView {
+    @ViewBuilder
+    private var topView: some View {
+        HStack{
+           closeButton
+            Spacer()
+            learnMoreButton
+            volumeButton
+        }
+    }
+    
+    private var closeButton: some View {
+        Button {
+            playerManager.stop()
+        } label: {
+            Image(systemName: "xmark.circle.fill")
+                .foregroundColor(.white)
+        }
+    }
+    
+    @ViewBuilder
+    private var learnMoreButton: some View {
+        if let url = insideAd.properties?.clickThroughUrl {
+            Link(destination: URL(string: url)!,
+                 label: {
+                Text("Learn more")
+                    .foregroundStyle(.white)
+            })
+        }
+    }
+    
+    private var volumeButton: some View {
+        Button {
+            playerManager.player.isMuted.toggle()
+            playerIsMuted.toggle()
+        } label: {
+            Image(systemName: playerIsMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                .foregroundColor(.white)
         }
     }
 }
@@ -77,15 +130,12 @@ class PlayerManager : ObservableObject {
     
     func playerItemStatusChanged(_ status: AVPlayerItem.Status){
         if status == .readyToPlay {
-            print("AVPlayer - status - readyToPlay")
             NotificationCenter.post(name: .AdsContentView_setFullSize)
             insideAdCallback = .STREAM_LOADED
         }else if status == .failed {
-            print("AVPlayer - status - falied")
             NotificationCenter.post(name: .AdsContentView_setZeroSize)
             insideAdCallback = .IMAAdError("AVPlayer.status.falied")
         }else{
-            print("AVPlayer - status - \(status)")
             insideAdCallback = .UNKNOWN
         }
     }

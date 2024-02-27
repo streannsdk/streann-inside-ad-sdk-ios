@@ -99,14 +99,15 @@ class InsideAd: Codable {
     var resellerID: String?
     var fallBackID: String?
     var url: String?
-    var properties: BannerAdProperties?
+    var properties: AdProperties?
     var fallBack: String?
     //var durationInSeconds: Int?
 }
 
-class BannerAdProperties: Codable {
+class AdProperties: Codable {
     var durationInSeconds: Int?
     var sizes: [Size]?
+    var clickThroughUrl: String?
 }
 
 class Size: Codable {

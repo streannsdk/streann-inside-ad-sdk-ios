@@ -193,7 +193,7 @@ struct InsideAdViewWrapper: UIViewControllerRepresentable {
     var screen: String
     let parent: InsideAdView
     
-    @Binding var insideAd: InsideAd?
+    var insideAd: InsideAd?
     @Binding var activePlacement: Placement?
     @Binding var geoIp: GeoIp?
         
