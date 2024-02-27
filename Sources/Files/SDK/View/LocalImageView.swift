@@ -9,10 +9,10 @@ import SwiftUI
 
 struct LocalImageView: View {
     @StateObject var imageLoader: ImageLoaderService
-    @State var image: UIImage = UIImage()
     @Binding var insideAdCallback: InsideAdCallbackType
     var insideAd: InsideAd
     var viewModel: InsideAdViewModel
+    @State var hideControls = true
     
     public init(insideAd: InsideAd, viewModel: InsideAdViewModel, insideAdCallback: Binding<InsideAdCallbackType>) {
         self._insideAdCallback = insideAdCallback
@@ -23,6 +23,7 @@ struct LocalImageView: View {
     
     var body: some View {
         ZStack {
+            if let image = imageLoader.image {
             Image(uiImage: image)
                 .resizable()
                 .aspectRatio(16/9, contentMode: .fill)
@@ -34,11 +35,13 @@ struct LocalImageView: View {
                 Spacer()
             }
             .padding(2)
+            .hide(if: imageLoader.image == nil)
         }
-        .hide(if: insideAdCallback == .ALL_ADS_COMPLETED)
+        }
         .onReceive(imageLoader.$image) { image in
-            self.image = image
-            insideAdCallback = .LOADED
+            if let image {
+                insideAdCallback = .LOADED
+            }
         }
         .task {
             if let _ = insideAd.url {
@@ -61,8 +64,7 @@ extension LocalImageView {
     
     private var closeButton: some View {
         Button {
-            insideAdCallback = .ALL_ADS_COMPLETED
-            NotificationCenter.post(name: .AdsContentView_setZeroSize)
+            imageLoader.closeAdAndResetImage()
         } label: {
             Image(systemName: "xmark.circle.fill")
                 .foregroundColor(.white)
@@ -83,7 +85,7 @@ extension LocalImageView {
 
 
 class ImageLoaderService: ObservableObject {
-    @Published var image: UIImage = UIImage()
+    @Published var image: UIImage?// = UIImage()
     @Binding var insideAdCallback: InsideAdCallbackType
     var viewModel: InsideAdViewModel
     var activeInsideAd: InsideAd
@@ -97,25 +99,30 @@ class ImageLoaderService: ObservableObject {
     func loadImage() {
         guard let url = URL(string: activeInsideAd.url ?? "") else { return }
         
-        let task = URLSession.shared.dataTask(with: url) { data, response, error in
+        let task = URLSession.shared.dataTask(with: url) {[weak self] data, response, error in
             guard let data = data else {
-                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(self.viewModel.activeCampaign?.properties?.intervalInMinutes?.convertMinutesToSeconds() ?? 1 + (self.viewModel.activeInsideAd?.properties?.durationInSeconds ?? 1))) {
+                DispatchQueue.main.async {
                     NotificationCenter.post(name: .AdsContentView_startTimer)
-                    self.insideAdCallback = .IMAAdError(error?.localizedDescription ?? "")
+                    self?.insideAdCallback = .IMAAdError(error?.localizedDescription ?? "")
                 }
                 return
             }
-            DispatchQueue.main.async {
-                self.image = UIImage(data: data) ?? UIImage()
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(self?.viewModel.activePlacement?.properties?.startAfterSeconds ?? 1)) {
+                self?.image = UIImage(data: data)
                 NotificationCenter.post(name: .AdsContentView_setFullSize)
-                self.insideAdCallback = .LOADED
-                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(self.activeInsideAd.properties?.durationInSeconds ?? 1)) {
-                    self.insideAdCallback = .ALL_ADS_COMPLETED
-                    NotificationCenter.post(name: .AdsContentView_setZeroSize)
-                    NotificationCenter.post(name: .AdsContentView_startTimer)
+                self?.insideAdCallback = .LOADED
+                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(self?.activeInsideAd.properties?.durationInSeconds ?? 1)) {
+                    self?.closeAdAndResetImage()
                 }
             }
         }
         task.resume()
+    }
+    
+    func closeAdAndResetImage() {
+        DispatchQueue.main.async {[weak self] in
+            self?.insideAdCallback = .ALL_ADS_COMPLETED
+            self?.image = nil
+        }
     }
 }
