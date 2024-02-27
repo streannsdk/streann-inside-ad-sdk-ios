@@ -44,7 +44,7 @@ public struct InsideAdView: View, InsideAdCallbackDelegate {
                          BannerView(insideAdViewModel: viewModel, parent: self)
                     }
                     else if activeInsideAd.adType == .LOCAL_IMAGE{
-                        LocalImageView(insideAd: activeInsideAd, insideAdCallback: $insideAdCallback)
+                        LocalImageView(insideAd: activeInsideAd, viewModel: viewModel, insideAdCallback: $insideAdCallback)
                     }
                     else{
                          EmptyView()
