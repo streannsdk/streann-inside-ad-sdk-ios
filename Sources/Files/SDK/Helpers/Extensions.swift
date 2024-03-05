@@ -105,11 +105,7 @@ extension Bundle {
 
 extension Double {
     func convertMinutesToSeconds() -> Int {
-        let minutes = Int(self)
-        let secondsFraction = self - Double(minutes)
-        let totalSeconds = minutes * 60 + Int(secondsFraction * 60)
-        
-        return totalSeconds
+        return Int(self * 60)
     }
 }
 

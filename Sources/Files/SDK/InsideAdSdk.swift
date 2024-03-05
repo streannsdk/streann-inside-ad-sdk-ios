@@ -12,6 +12,7 @@ public class InsideAdSdk {
                 apiKey: String,
                 apiToken: String,
                 siteUrl: String? = nil,
+                unitId: String? = nil,
                 storeUrl: String? = nil,
                 descriptionUrl: String? = nil,
                 userBirthYear: Int64? = nil,
@@ -19,6 +20,7 @@ public class InsideAdSdk {
         Constants.ResellerInfo.baseUrl = baseUrl
         Constants.ResellerInfo.apiKey = apiKey
         Constants.ResellerInfo.apiToken = apiToken
+        Constants.ResellerInfo.unitId = unitId ?? ""
         Constants.ResellerInfo.siteUrl = siteUrl ?? ""
         Constants.ResellerInfo.storeUrl = storeUrl ?? ""
         Constants.ResellerInfo.descriptionUrl = descriptionUrl ?? ""
@@ -34,9 +36,9 @@ public class InsideAdSdk {
     struct AdsContentView: View {
         var screen: String
         var playerState: Binding<InsideAdCallbackType>
+        
         @State var adViewId = UUID()
         @State var timerNextAd: Timer? = nil
-        
         @State private var adViewHeight: CGFloat = 0
         @State private var adViewWidth: CGFloat = 0
         
@@ -51,7 +53,7 @@ public class InsideAdSdk {
                 .id(adViewId)
                 .frame(maxWidth: adViewWidth, maxHeight: adViewHeight)
                 .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_setFullSize), perform: { _ in
-                    adViewHeight = .infinity
+                    adViewHeight = UIScreen.main.bounds.width / 16 * 9
                     adViewWidth = .infinity
                 })
                 .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_setZeroSize), perform: { _ in
@@ -66,11 +68,11 @@ public class InsideAdSdk {
                     
                     if let intervalInMinutes, intervalInMinutes > 0 {
                         print(Logger.log("Timer started for next ad - intervalInMinutes \(intervalInMinutes)"))
-                        timerNextAd = Timer.scheduledTimer(withTimeInterval: TimeInterval(intervalInMinutes * 60), repeats: false){ _ in
+                        timerNextAd = Timer.scheduledTimer(withTimeInterval: TimeInterval(intervalInMinutes.convertMinutesToSeconds()), repeats: false){ _ in
                             adViewId = UUID()
                         }
                     }else{
-                        print(Logger.log("Timer not started - intervalInMinutes \(intervalInMinutes)"))
+                        print(Logger.log("Timer not started - intervalInMinutes \(intervalInMinutes ?? 0)"))
                     }
                 })
                 .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_stopTimer), perform: { _ in

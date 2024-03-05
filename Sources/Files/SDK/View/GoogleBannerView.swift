@@ -12,16 +12,16 @@ import GoogleMobileAds
 struct BannerView: View {
     @State var height: CGFloat = 0
     @State var width: CGFloat = 0
-
+    
     var insideAdViewModel: InsideAdViewModel
     let parent: InsideAdView
     
     public var body: some View {
         BannerAd(insideAdViewModel: insideAdViewModel, parent: parent)
-            .frame(width: width, height: height, alignment: .trailing)
-            .onAppear {
-                setFrame()
-            }
+                .frame(width: width, height: height, alignment: .trailing)
+                .onAppear {
+                    setFrame()
+                }
     }
     
     func setFrame() {
@@ -44,19 +44,20 @@ struct BannerAd: UIViewControllerRepresentable {
     var insideAdViewModel: InsideAdViewModel
     let parent: InsideAdView
     
-    func makeUIViewController(context: Context) -> BannerAdViewController {
-        return BannerAdViewController(viewModel: insideAdViewModel, insideAdCallbackDelegate: parent)
+    func makeUIViewController(context: Context) -> BannerAdVC {
+        return BannerAdVC(viewModel: insideAdViewModel, insideAdCallbackDelegate: parent)
     }
-    
-    func updateUIViewController(_ uiViewController: BannerAdViewController, context: Context) {
+
+    func updateUIViewController(_ uiViewController: BannerAdVC, context: Context) {
         
     }
 }
 
-class BannerAdViewController: UIViewController {
+class BannerAdVC: UIViewController {
     var viewModel: InsideAdViewModel
-    var adSizes = [NSValue]()
     var insideAdCallbackDelegate: InsideAdCallbackDelegate
+    var adSizes = [NSValue]()
+    private var adRequestStatus: AdRequestStatus = .adRequested
     
     init(viewModel: InsideAdViewModel, insideAdCallbackDelegate: InsideAdCallbackDelegate) {
         self.viewModel = viewModel
@@ -68,33 +69,41 @@ class BannerAdViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
     
-    var bannerView: GAMBannerView = GAMBannerView(adSize: GADAdSizeFullBanner)
-    
+    var bannerView: GAMBannerView = GAMBannerView(adSize: GADAdSizeBanner)
+
     override func viewDidLoad() {
         setupBannerView()
         loadBannerAd()
     }
-    
+
     private func setupBannerView() {
-        bannerView.adUnitID = viewModel.activeInsideAd?.url
+        switch adRequestStatus {
+            case .adRequested:
+                bannerView.adUnitID = viewModel.activeInsideAd?.url
+            case .fallbackRequested:
+                bannerView.adUnitID = viewModel.activeInsideAd?.fallback?.url
+        }
         bannerView.rootViewController = self
         bannerView.delegate = self
         bannerView.adSizeDelegate = self
         bannerView.load(GADRequest())
     }
-    
+
     private func loadBannerAd() {
         let frame = view.frame.inset(by: view.safeAreaInsets)
         let viewWidth = frame.size.width
-        
+
         bannerView.adSize = GADCurrentOrientationAnchoredAdaptiveBannerAdSizeWithWidth(viewWidth)
         addValidSizesToBannerView()
         bannerView.validAdSizes = adSizes
+        
+        adRequestStatus = (adRequestStatus == .fallbackRequested) ? .adRequested : .fallbackRequested
+
         bannerView.load(GADRequest())
     }
-    
+
     private func addValidSizesToBannerView() {
-        if let sizes =  viewModel.activeInsideAd?.properties?.sizes {
+        if let sizes = adRequestStatus == .adRequested ? viewModel.activeInsideAd?.properties?.sizes :  viewModel.activeInsideAd?.fallback?.properties?.sizes {
             for size in sizes {
                 let customSize = GADAdSizeFromCGSize(CGSize(width: size.width ?? 320, height: size.height ?? 50))
                 adSizes.append(NSValueFromGADAdSize(customSize))
@@ -105,7 +114,7 @@ class BannerAdViewController: UIViewController {
     }
 }
 
-extension BannerAdViewController: GADBannerViewDelegate, GADAdSizeDelegate {
+extension BannerAdVC: GADBannerViewDelegate, GADAdSizeDelegate {
     func adView(_ bannerView: GADBannerView, willChangeAdSizeTo size: GADAdSize) {
         print("bannerViewDidRecordImpression willChangeAdSizeTo size: GADAdSize \(size)")
     }
@@ -113,36 +122,37 @@ extension BannerAdViewController: GADBannerViewDelegate, GADAdSizeDelegate {
     func bannerViewDidReceiveAd(_ bannerView: GADBannerView) {
         insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertEventType(type: .LOADED))
         view.addSubview(bannerView)
-        print("bannerViewDidReceiveAd")
         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(viewModel.activeInsideAd?.properties?.durationInSeconds ?? 10)) {
             bannerView.removeFromSuperview()
+            self.adRequestStatus = .adRequested
             self.insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertEventType(type: .ALL_ADS_COMPLETED))
         }
     }
-    
+
     func bannerView(_ bannerView: GADBannerView, didFailToReceiveAdWithError error: Error) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(viewModel.activeCampaign?.properties?.intervalInMinutes?.convertMinutesToSeconds() ?? 1 + (viewModel.activeInsideAd?.properties?.durationInSeconds ?? 1))) {
+        if adRequestStatus == .fallbackRequested {
+            setupBannerView()
+            loadBannerAd()
+        } else {
             NotificationCenter.post(name: .AdsContentView_startTimer)
-            self.insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: error.localizedDescription ))
+            insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: error.localizedDescription ))
+            adRequestStatus = .adRequested
         }
     }
     
     func bannerViewDidRecordImpression(_ bannerView: GADBannerView) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(viewModel.activeCampaign?.properties?.intervalInMinutes?.convertMinutesToSeconds() ?? 1 + (viewModel.activeInsideAd?.properties?.durationInSeconds ?? 1))) {
-            NotificationCenter.post(name: .AdsContentView_startTimer)
-            print("bannerViewDidRecordImpression")
-        }
+        print("bannerViewDidRecordImpression")
     }
-    
+
     func bannerViewWillPresentScreen(_ bannerView: GADBannerView) {
-        print("bannerViewWillPresentScreen")
+      print("bannerViewWillPresentScreen")
     }
-    
+
     func bannerViewWillDismissScreen(_ bannerView: GADBannerView) {
-        print("bannerViewWillDIsmissScreen")
+      print("bannerViewWillDIsmissScreen")
     }
-    
+
     func bannerViewDidDismissScreen(_ bannerView: GADBannerView) {
-        print("bannerViewDidDismissScreen")
+      print("bannerViewDidDismissScreen")
     }
 }

@@ -21,10 +21,10 @@ class InsideAdViewController: UIViewController, ObservableObject {
 
     private var geoModel: GeoIp?
     private var insideAdHelper = InsideAdHelper()
+    private var adRequestStatus: AdRequestStatus = .adRequested
     
-    var screen = ""
     var viewSize: CGSize = CGSize(width: 300, height: 250)
-    
+    // Keep a track of the number of ads requested to handle the fallback ad
     
     //Delegates
     var insideAdCallbackDelegate: InsideAdCallbackDelegate
@@ -45,18 +45,16 @@ class InsideAdViewController: UIViewController, ObservableObject {
     // MARK: - View controller lifecycle methods
     override func viewDidLoad() {
          super.viewDidLoad()
-         
          addImmadPlayerView()
          adsLoader.delegate = self
     }
     
     override func viewDidAppear(_ animated: Bool) {
-        self.requestAds(screen: self.screen)
+        self.requestAds()
     }
      
      override func viewWillLayoutSubviews() {
           super.viewWillLayoutSubviews()
-          
           if let volumeButton = volumeButton{
                view.bringSubviewToFront(volumeButton)
           }
@@ -77,7 +75,7 @@ class InsideAdViewController: UIViewController, ObservableObject {
           button.layer.cornerRadius = 10
           button.layer.borderWidth = 1
           button.layer.borderColor = UIColor.white.cgColor
-          button.setImage(UIImage(systemName: Constants.ResellerInfo.isAdMuted ? "speaker.slash.fill" : "speaker.fill"), for: .normal)
+         button.setImage(UIImage(systemName: Constants.ResellerInfo.isAdMuted ? Constants.SystemImage.speakerSlashFill : Constants.SystemImage.speakerFill), for: .normal)
           button.addTarget(self, action: #selector(volumeButtonAction), for: .touchUpInside)
 
           self.view.addSubview(button)
@@ -93,14 +91,13 @@ class InsideAdViewController: UIViewController, ObservableObject {
      
      private func setImmadVolume(){
           adsManager?.volume = Constants.ResellerInfo.isAdMuted ? 0 : 1
-          volumeButton?.setImage(UIImage(systemName: Constants.ResellerInfo.isAdMuted ? "speaker.slash.fill" : "speaker.fill"), for: .normal)
+          volumeButton?.setImage(UIImage(systemName: Constants.ResellerInfo.isAdMuted ? Constants.SystemImage.speakerSlashFill : Constants.SystemImage.speakerFill), for: .normal)
      }
 
     // MARK: IMA integration methods
-    func requestAds(screen: String) {
-        
+    func requestAds() {
         let activeInsideAd = insideAd
-        let url = activeInsideAd?.url
+        let url = adRequestStatus == .adRequested ? activeInsideAd?.url : activeInsideAd?.fallback?.url
         
         if let url = url, let geoIp = geoIp{
             //Populate macros
@@ -121,6 +118,7 @@ class InsideAdViewController: UIViewController, ObservableObject {
             
             DispatchQueue.main.asyncAfter(deadline: .now() + startAfterSeconds) {[weak self] in
                 self?.adsLoader.requestAds(with: request)
+                self?.adRequestStatus = (self?.adRequestStatus == .fallbackRequested) ? .adRequested : .fallbackRequested
             }
         }
     }
@@ -148,8 +146,16 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     }
     
     func adsLoader(_ loader: IMAAdsLoader, failedWith adErrorData: IMAAdLoadingErrorData) {
-        insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: adErrorData.adError.message ?? ""))
-        print(Logger.log("\(adErrorData.adError.message ?? "Unknown error")"))
+        if adRequestStatus == .fallbackRequested {
+            requestAds()
+        } else {
+            insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: adErrorData.adError.message ?? ""))
+            //Two times the ads was requested without success, reset the counter
+            adRequestStatus = .adRequested
+            // Start the timer to call the next ad interval
+            NotificationCenter.post(name: .AdsContentView_startTimer)
+            print(Logger.log("\(adErrorData.adError.message ?? "Unknown error")"))
+        }
     }
     
     // MARK: - IMAAdsManagerDelegate
@@ -168,7 +174,6 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
         // Something went wrong with the ads manager after ads were loaded. Log the error and play the
         // content.
         insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: error.message ?? ""))
-        //        self.view.removeFromSuperview()
         print(Logger.log("\(error.message ?? "Unknown error")"))
     }
     
@@ -190,7 +195,6 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
 }
 
 struct InsideAdViewWrapper: UIViewControllerRepresentable {
-    var screen: String
     let parent: InsideAdView
     
     var insideAd: InsideAd?
@@ -199,7 +203,6 @@ struct InsideAdViewWrapper: UIViewControllerRepresentable {
         
     func makeUIViewController(context: Context) -> InsideAdViewController {
         let controller = InsideAdViewController(insideAdCallbackDelegate: parent)
-        controller.screen = screen
         controller.insideAd = insideAd
         controller.activePlacement = activePlacement
         controller.geoIp = geoIp

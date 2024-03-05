@@ -13,7 +13,9 @@ public protocol InsideAdCallbackDelegate {
 
 public struct InsideAdView: View, InsideAdCallbackDelegate {
     @Binding var insideAdCallback: InsideAdCallbackType
+    
     var screen: String
+    
     @State var loadingAderror = false
     @State var reload = false
      
@@ -29,30 +31,37 @@ public struct InsideAdView: View, InsideAdCallbackDelegate {
     
      public var body: some View {
           VStack {
-               if let activeInsideAd = viewModel.activeInsideAd {
-                    if activeInsideAd.adType == .VAST {
-                        InsideAdViewWrapper(screen: screen, parent: self,
-                                            insideAd: activeInsideAd,
-                                            activePlacement: $viewModel.activePlacement,
-                                            geoIp: $viewModel.geoIp) //geo.size
-                    }
-                   else if activeInsideAd.adType == .LOCAL_VIDEO{
-                        LocalVideoPlayerView(insideAd: activeInsideAd,
-                                             insideAdCallback: $insideAdCallback)
+              if let activeInsideAd = viewModel.activeInsideAd {
+                   switch activeInsideAd.adType {
+                        case .VAST:
+                             InsideAdViewWrapper(parent: self,
+                                                 insideAd: activeInsideAd,
+                                                 activePlacement: $viewModel.activePlacement,
+                                                 geoIp: $viewModel.geoIp)
+                             
+                        case .LOCAL_IMAGE:
+                             LocalImageView(insideAd: activeInsideAd, viewModel: viewModel, insideAdCallback: $insideAdCallback)
+                        
+                        case .LOCAL_VIDEO:
+                             LocalVideoPlayerView(insideAd: activeInsideAd,
+                                                  insideAdCallback: $insideAdCallback)
+                        
+                        case .BANNER:
+                             BannerView(insideAdViewModel: viewModel, parent: self)
+                        
+                        case .FULLSCREEN_NATIVE:
+                             NativeAdView()
+                        
+                        case .unsupported:
+                             EmptyView()
+                        
+                        case .none:
+                             EmptyView()
                    }
-                    else if activeInsideAd.adType == .BANNER {
-                         BannerView(insideAdViewModel: viewModel, parent: self)
-                    }
-                    else if activeInsideAd.adType == .LOCAL_IMAGE{
-                        LocalImageView(insideAd: activeInsideAd, viewModel: viewModel, insideAdCallback: $insideAdCallback)
-                    }
-                    else{
-                         EmptyView()
-                    }
-               }else{
-                    EmptyView()
-               }
-          }
+              } else {
+                   EmptyView()
+              }
+         }
           .onChange(of: insideAdCallback, perform: { value in
                if value == .STARTED {
                     NotificationCenter.post(name: .AdsContentView_setFullSize)

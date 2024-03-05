@@ -14,7 +14,6 @@ import CoreTelephony
 import SystemConfiguration
 import CoreLocation
 import SwiftUI
-//import GoogleInteractiveMediaAds
 
 class InsideAdHelper {
     var webView = WKWebView(frame: .zero)
@@ -331,4 +330,9 @@ public enum UserGender: String {
     case unknown = "u"
 }
 
+//Check he status of the requested ad to handle the fallbacks
+enum AdRequestStatus {
+    case adRequested
+    case fallbackRequested
+}
 

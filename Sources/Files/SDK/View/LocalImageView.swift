@@ -24,29 +24,24 @@ struct LocalImageView: View {
     var body: some View {
         ZStack {
             if let image = imageLoader.image {
-            Image(uiImage: image)
-                .resizable()
-                .aspectRatio(16/9, contentMode: .fill)
-                .frame(width: UIScreen.main.bounds.width)
-                .clipped()
-            
-            VStack{
-                topView
-                Spacer()
+                Image(uiImage: image)
+                    .resizable()
+                
+                VStack{
+                    topView
+                    Spacer()
+                }
+                .padding(2)
+                .hide(if: imageLoader.image == nil)
             }
-            .padding(2)
-            .hide(if: imageLoader.image == nil)
-        }
         }
         .onReceive(imageLoader.$image) { image in
-            if let image {
+            if image != nil {
                 insideAdCallback = .LOADED
             }
         }
         .task {
-            if let _ = insideAd.url {
-                imageLoader.loadImage()
-            }
+            imageLoader.loadImage()
         }
     }
 }
@@ -66,7 +61,7 @@ extension LocalImageView {
         Button {
             imageLoader.closeAdAndResetImage()
         } label: {
-            Image(systemName: "xmark.circle.fill")
+            Image(systemName: Constants.SystemImage.xMarkCircleFill)
                 .foregroundColor(.white)
         }
     }
@@ -83,12 +78,13 @@ extension LocalImageView {
     }
 }
 
-
 class ImageLoaderService: ObservableObject {
-    @Published var image: UIImage?// = UIImage()
+    @Published var image: UIImage?
     @Binding var insideAdCallback: InsideAdCallbackType
+    
     var viewModel: InsideAdViewModel
     var activeInsideAd: InsideAd
+    private var adRequestStatus: AdRequestStatus = .adRequested
     
     init(insideAdCallback: Binding<InsideAdCallbackType>, activeInsideAd: InsideAd, viewModel: InsideAdViewModel) {
         self._insideAdCallback = insideAdCallback
@@ -97,15 +93,21 @@ class ImageLoaderService: ObservableObject {
     }
     
     func loadImage() {
-        guard let url = URL(string: activeInsideAd.url ?? "") else { return }
+        guard let url = URL(string: (adRequestStatus == .adRequested ? activeInsideAd.url : activeInsideAd.fallback?.url) ?? "") else { return }
         
         let task = URLSession.shared.dataTask(with: url) {[weak self] data, response, error in
             guard let data = data else {
-                DispatchQueue.main.async {
-                    NotificationCenter.post(name: .AdsContentView_startTimer)
-                    self?.insideAdCallback = .IMAAdError(error?.localizedDescription ?? "")
+                if self?.adRequestStatus == .adRequested {
+                    self?.adRequestStatus = .fallbackRequested
+                    self?.loadImage()
+                    return
+                } else {
+                    DispatchQueue.main.async {
+                        NotificationCenter.post(name: .AdsContentView_startTimer)
+                        self?.insideAdCallback = .IMAAdError(error?.localizedDescription ?? "")
+                    }
+                    return
                 }
-                return
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + Double(self?.viewModel.activePlacement?.properties?.startAfterSeconds ?? 1)) {
                 self?.image = UIImage(data: data)

@@ -16,15 +16,16 @@ struct Constants {
     }
     
     struct ResellerInfo {
-      static var baseUrl = ""
-      static var apiKey = ""
-      static var apiToken = ""
-      static var siteUrl = ""
-      static var storeUrl = ""
-      static var descriptionUrl = ""
-      static var appDomain = ""
-      static var intervalInMinutes: Double?
-      static var isAdMuted: Bool = false
+        static var baseUrl = ""
+        static var apiKey = ""
+        static var apiToken = ""
+        static var unitId = ""
+        static var siteUrl = ""
+        static var storeUrl = ""
+        static var descriptionUrl = ""
+        static var appDomain = ""
+        static var intervalInMinutes: Double?
+        static var isAdMuted: Bool = false
     }
     
     struct CampaignInfo {
@@ -34,6 +35,13 @@ struct Constants {
     struct UserInfo {
         static var userBirthYear: Int64? = 0
         static var userGender: UserGender = .unknown
+    }
+    
+    struct SystemImage {
+        static let speakerFill = "speaker.fill"
+        static let speakerSlashFill = "speaker.slash.fill"
+        static let speakerWaveTwoFill = "speaker.wave.2.fill"
+        static let xMarkCircleFill = "xmark.circle.fill"
     }
 }
 
