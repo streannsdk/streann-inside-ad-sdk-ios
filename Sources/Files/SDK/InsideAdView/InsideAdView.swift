@@ -44,7 +44,8 @@ public struct InsideAdView: View, InsideAdCallbackDelegate {
                         BannerView(activeInsideAd: activeInsideAd, parent: self)
                         
                    case .FULLSCREEN_NATIVE:
-                        NativeAdView()
+                        // NativeAdView()
+                       EmptyView()
                         
                    case .unsupported:
                         EmptyView()
