@@ -369,7 +369,8 @@ class CampaignManager {
                                 SDKAPI.getCampaigns(countryCode: CampaignManager.shared.geoIp?.countryCode ?? "") { campaigns, error in
                                     DispatchQueue.main.async {
                                         if let campaigns {
-                                            CampaignManager.shared.allCampaigns = campaigns
+                                            // CampaignManager.shared.allCampaigns = campaigns
+                                            CampaignManager.shared.allCampaigns = campaigns.filter({ $0.allowedCountries!.isEmpty
                                         } else {
                                             let errorMsg = Logger.log("Error while getting AD.")
                                             print(Logger.log(errorMsg))
