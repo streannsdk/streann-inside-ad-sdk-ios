@@ -336,3 +336,53 @@ enum AdRequestStatus {
     case fallbackRequested
 }
 
+class CampaignManager {
+    static var shared = CampaignManager()
+    
+    init() {
+        getAllCampaigns()
+    }
+    var allCampaigns: [CampaignAppModel]?
+    var geoIp: GeoIp?
+    
+    private func getAllCampaigns() {
+        if Constants.ResellerInfo.apiKey == "" {
+            let errorMsg = "Api Key is required. Please implement the initializeSdk method."
+            print(Logger.log(errorMsg))
+            //            insideAdCallback = .IMAAdError(errorMsg)
+        }
+        
+        if Constants.ResellerInfo.baseUrl == "" {
+            let errorMsg = "Base Url is required. Please implement the initializeSdk method."
+            print(Logger.log(errorMsg))
+            //            insideAdCallback = .IMAAdError(errorMsg)
+        }
+        
+        SDKAPI.getGeoIpUrl { geoIpUrl, error in
+            if let geoIpUrl {
+                DispatchQueue.global(qos: .background).async {
+                    SDKAPI.getGeoIp(fromUrl: geoIpUrl.geoIpUrl) { geoIp, error in
+                        if let geoIp {
+                            DispatchQueue.main.async {
+                                CampaignManager.shared.geoIp = geoIp
+                                
+                                SDKAPI.getCampaigns(countryCode: CampaignManager.shared.geoIp?.countryCode ?? "") { campaigns, error in
+                                    DispatchQueue.main.async {
+                                        if let campaigns {
+                                            CampaignManager.shared.allCampaigns = campaigns
+                                        } else {
+                                            let errorMsg = Logger.log("Error while getting AD.")
+                                            print(Logger.log(errorMsg))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+

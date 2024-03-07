@@ -28,10 +28,6 @@ struct Constants {
         static var isAdMuted: Bool = false
     }
     
-    struct CampaignInfo {
-        static var intervalInMinutes: Double? = nil
-    }
-    
     struct UserInfo {
         static var userBirthYear: Int64? = 0
         static var userGender: UserGender = .unknown
@@ -50,7 +46,6 @@ struct Logger {
         return ("STREANN-InsideAdSDK LOG: \(string)")
     }
 }
-
 
 public enum InsideAdCallbackType: Equatable, CaseIterable {
     case AD_BREAK_READY
