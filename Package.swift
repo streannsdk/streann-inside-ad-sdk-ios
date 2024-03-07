@@ -28,7 +28,7 @@ let package = Package(
             name: "streann-inside-ad-sdk-ios",
             dependencies: [],
             path: "./Sources/",
-            resources: []
+            resources: [.process("streann-inside-ad-sdk-ios.xcassets")]
         ),
 //        .testTarget(
 //            name: "InsideAdsSDKTests",
