@@ -370,7 +370,7 @@ class CampaignManager {
                                     DispatchQueue.main.async {
                                         if let campaigns {
                                             // CampaignManager.shared.allCampaigns = campaigns
-                                            CampaignManager.shared.allCampaigns = campaigns.filter({ $0.allowedCountries!.isEmpty })
+                                            CampaignManager.shared.allCampaigns = campaigns
                                         } else {
                                             let errorMsg = Logger.log("Error while getting AD.")
                                             print(Logger.log(errorMsg))
