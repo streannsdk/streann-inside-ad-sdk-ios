@@ -24,7 +24,6 @@ class InsideAdViewController: UIViewController, ObservableObject {
     private var adRequestStatus: AdRequestStatus = .adRequested
     
     var viewSize: CGSize = CGSize(width: 300, height: 250)
-    // Keep a track of the number of ads requested to handle the fallback ad
     
     //Delegates
     var insideAdCallbackDelegate: InsideAdCallbackDelegate
@@ -114,12 +113,12 @@ class InsideAdViewController: UIViewController, ObservableObject {
                 contentPlayhead: self.contentPlayhead,
                 userContext: nil)
             
-            let startAfterSeconds:Double = Double(activePlacement?.properties?.startAfterSeconds ?? 0) 
+//            let startAfterSeconds:Double = Double(activePlacement?.properties?.startAfterSeconds ?? 0) 
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + startAfterSeconds) {[weak self] in
-                self?.adsLoader.requestAds(with: request)
-                self?.adRequestStatus = (self?.adRequestStatus == .fallbackRequested) ? .adRequested : .fallbackRequested
-            }
+//            DispatchQueue.main.asyncAfter(deadline: .now() + startAfterSeconds) {[weak self] in
+                self.adsLoader.requestAds(with: request)
+                self.adRequestStatus = (self.adRequestStatus == .fallbackRequested) ? .adRequested : .fallbackRequested
+//            }
         }
     }
 }
@@ -150,10 +149,10 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
             requestAds()
         } else {
             insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: adErrorData.adError.message ?? ""))
-            //Two times the ads was requested without success, reset the counter
             adRequestStatus = .adRequested
             // Start the timer to call the next ad interval
             NotificationCenter.post(name: .AdsContentView_startTimer)
+            volumeButton?.removeFromSuperview()
             print(Logger.log("\(adErrorData.adError.message ?? "Unknown error")"))
         }
     }
@@ -196,10 +195,9 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
 
 struct InsideAdViewWrapper: UIViewControllerRepresentable {
     let parent: InsideAdView
-    
     var insideAd: InsideAd?
-    @Binding var activePlacement: Placement?
-    @Binding var geoIp: GeoIp?
+    var activePlacement: Placement?
+    var geoIp: GeoIp?
         
     func makeUIViewController(context: Context) -> InsideAdViewController {
         let controller = InsideAdViewController(insideAdCallbackDelegate: parent)

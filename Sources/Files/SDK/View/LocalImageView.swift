@@ -10,15 +10,15 @@ import SwiftUI
 struct LocalImageView: View {
     @StateObject var imageLoader: ImageLoaderService
     @Binding var insideAdCallback: InsideAdCallbackType
-    var insideAd: InsideAd
     var viewModel: InsideAdViewModel
+    var activeInsideAd: InsideAd
     @State var hideControls = true
     
-    public init(insideAd: InsideAd, viewModel: InsideAdViewModel, insideAdCallback: Binding<InsideAdCallbackType>) {
+    public init(activeInsideAd: InsideAd, viewModel: InsideAdViewModel, insideAdCallback: Binding<InsideAdCallbackType>) {
         self._insideAdCallback = insideAdCallback
-        self.insideAd = insideAd
+        self.activeInsideAd = activeInsideAd
         self.viewModel = viewModel
-        self._imageLoader = StateObject(wrappedValue: ImageLoaderService(insideAdCallback: insideAdCallback, activeInsideAd: insideAd, viewModel: viewModel))
+        self._imageLoader = StateObject(wrappedValue: ImageLoaderService(insideAdCallback: insideAdCallback, activeInsideAd: activeInsideAd, viewModel: viewModel))
     }
     
     var body: some View {
@@ -68,7 +68,7 @@ extension LocalImageView {
     
     @ViewBuilder
     private var learnMoreButton: some View {
-        if let url = insideAd.properties?.clickThroughUrl {
+        if let url = activeInsideAd.properties?.clickThroughUrl {
             Link(destination: URL(string: url)!,
                  label: {
                 Text("Learn more")
@@ -81,9 +81,9 @@ extension LocalImageView {
 class ImageLoaderService: ObservableObject {
     @Published var image: UIImage?
     @Binding var insideAdCallback: InsideAdCallbackType
-    
     var viewModel: InsideAdViewModel
     var activeInsideAd: InsideAd
+    
     private var adRequestStatus: AdRequestStatus = .adRequested
     
     init(insideAdCallback: Binding<InsideAdCallbackType>, activeInsideAd: InsideAd, viewModel: InsideAdViewModel) {
@@ -93,18 +93,21 @@ class ImageLoaderService: ObservableObject {
     }
     
     func loadImage() {
-        guard let url = URL(string: (adRequestStatus == .adRequested ? activeInsideAd.url : activeInsideAd.fallback?.url) ?? "") else { return }
         
+        guard let url = URL(string: (adRequestStatus == .adRequested ? activeInsideAd.url : activeInsideAd.fallback?.url) ?? "") else { return }
+        print("ImageViewDidRecordImpression URL \(url)")
         let task = URLSession.shared.dataTask(with: url) {[weak self] data, response, error in
             guard let data = data else {
                 if self?.adRequestStatus == .adRequested {
                     self?.adRequestStatus = .fallbackRequested
                     self?.loadImage()
+                    print("ImageViewDidRecordImpression self?.adRequestStatus == .adRequested \(url)")
                     return
                 } else {
                     DispatchQueue.main.async {
                         NotificationCenter.post(name: .AdsContentView_startTimer)
                         self?.insideAdCallback = .IMAAdError(error?.localizedDescription ?? "")
+                        print("ImageViewDidRecordImpression NotificationCenter.post")
                     }
                     return
                 }

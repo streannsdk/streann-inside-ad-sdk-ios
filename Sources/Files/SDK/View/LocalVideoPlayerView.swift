@@ -50,6 +50,7 @@ struct LocalVideoPlayerView: View {
             }
             .onDisappear {
                 NotificationCenter.default.removeObserver(self, name: UIApplication.willEnterForegroundNotification, object: nil)
+                playerManager.stop()
             }
         }
         .hide(if: playerManager.player.currentItem?.status != .readyToPlay || insideAdCallback == .ALL_ADS_COMPLETED)
