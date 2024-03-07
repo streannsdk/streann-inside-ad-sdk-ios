@@ -14,72 +14,66 @@ public protocol InsideAdCallbackDelegate {
 public struct InsideAdView: View, InsideAdCallbackDelegate {
     @Binding var insideAdCallback: InsideAdCallbackType
     
-    var screen: String
-    
-    @State var loadingAderror = false
+    @State var loadingAdError = false
     @State var reload = false
-     
     @StateObject var viewModel: InsideAdViewModel
-
-     public init(screen: String, insideAdCallback: Binding<InsideAdCallbackType>) {
-        _insideAdCallback = insideAdCallback
-        self.screen = screen
-        self._viewModel = StateObject(wrappedValue: InsideAdViewModel(screen: screen,
-                                                                        insideAdCallback: insideAdCallback,
-                                                                        apiProtocolType: SDKAPI.self))
+    
+    init(screen: String, insideAdCallback: Binding<InsideAdCallbackType>) {
+         _insideAdCallback = insideAdCallback
+         self._viewModel = StateObject(wrappedValue: InsideAdViewModel(screen: screen,
+                                                                       insideAdCallback: insideAdCallback))
     }
     
-     public var body: some View {
-          VStack {
+    public var body: some View {
+         VStack {
               if let activeInsideAd = viewModel.activeInsideAd {
                    switch activeInsideAd.adType {
-                        case .VAST:
-                             InsideAdViewWrapper(parent: self,
-                                                 insideAd: activeInsideAd,
-                                                 activePlacement: $viewModel.activePlacement,
-                                                 geoIp: $viewModel.geoIp)
-                             
-                        case .LOCAL_IMAGE:
-                             LocalImageView(insideAd: activeInsideAd, viewModel: viewModel, insideAdCallback: $insideAdCallback)
+                   case .VAST:
+                        InsideAdViewWrapper(parent: self, insideAd: activeInsideAd,
+                                            activePlacement: viewModel.activePlacement,
+                                            geoIp: CampaignManager.shared.geoIp)
                         
-                        case .LOCAL_VIDEO:
-                             LocalVideoPlayerView(insideAd: activeInsideAd,
-                                                  insideAdCallback: $insideAdCallback)
+                   case .LOCAL_IMAGE:
+                        LocalImageView(activeInsideAd: activeInsideAd, viewModel: viewModel, insideAdCallback: $insideAdCallback)
                         
-                        case .BANNER:
-                             BannerView(insideAdViewModel: viewModel, parent: self)
+                   case .LOCAL_VIDEO:
+                        LocalVideoPlayerView(insideAd: activeInsideAd,
+                                             insideAdCallback: $insideAdCallback)
                         
-                        case .FULLSCREEN_NATIVE:
-                             NativeAdView()
+                   case .BANNER:
+                        BannerView(activeInsideAd: activeInsideAd, parent: self)
                         
-                        case .unsupported:
-                             EmptyView()
+                   case .FULLSCREEN_NATIVE:
+                        NativeAdView()
                         
-                        case .none:
-                             EmptyView()
+                   case .unsupported:
+                        EmptyView()
+                        
+                   case .none:
+                        EmptyView()
                    }
               } else {
                    EmptyView()
               }
          }
-          .onChange(of: insideAdCallback, perform: { value in
-               if value == .STARTED {
-                    NotificationCenter.post(name: .AdsContentView_setFullSize)
-               }
-               else if value == .ALL_ADS_COMPLETED {
-                    NotificationCenter.post(name: .AdsContentView_setZeroSize)
-                    NotificationCenter.post(name: .AdsContentView_startTimer)
-               }
-               print("insideAdCallback \(value)")
-               insideAdCallback = value
-               
-               if case let .IMAAdError(string) = insideAdCallback {
-                    if !string.isEmpty {
-                         loadingAderror = true
-                    }
-               }
-          })
-     }
+         .onChange(of: insideAdCallback, perform: { value in
+              if value == .STARTED {
+                   NotificationCenter.post(name: .AdsContentView_setFullSize)
+              }
+              else if value == .ALL_ADS_COMPLETED {
+                   NotificationCenter.post(name: .AdsContentView_setZeroSize)
+                   NotificationCenter.post(name: .AdsContentView_startTimer)
+              }
+              
+              insideAdCallback = value
+
+              if case let .IMAAdError(string) = insideAdCallback {
+                   if !string.isEmpty {
+                       loadingAdError = true
+                   }
+              }
+         })
+    }
 }
 
 extension InsideAdView {
