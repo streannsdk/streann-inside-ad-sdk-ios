@@ -13,13 +13,10 @@ struct LocalVideoPlayerView: View {
     @StateObject var playerManager: PlayerManager
     @State private var playerIsMuted = false
     @Binding var insideAdCallback: InsideAdCallbackType
-    
-    var insideAd: InsideAd
-    
-    public init(insideAd: InsideAd, insideAdCallback: Binding<InsideAdCallbackType>) {
-        self._playerManager = StateObject(wrappedValue: PlayerManager(url:URL(string: insideAd.url ?? "")!,
-                                                                      insideAdCallback: insideAdCallback, insideAd: insideAd))
-        self.insideAd = insideAd
+        
+    public init(insideAdCallback: Binding<InsideAdCallbackType>) {
+        self._playerManager = StateObject(wrappedValue: PlayerManager(url:URL(string: CampaignManager.shared.activeInsideAd?.url ?? "")!,
+                                                                      insideAdCallback: insideAdCallback))
         self._insideAdCallback = insideAdCallback
     }
     
@@ -80,7 +77,7 @@ extension LocalVideoPlayerView {
     
     @ViewBuilder
     private var learnMoreButton: some View {
-        if let url = insideAd.properties?.clickThroughUrl {
+        if let url = CampaignManager.shared.activeInsideAd?.properties?.clickThroughUrl {
             Link(destination: URL(string: url)!,
                  label: {
                 Text("Learn more")
@@ -102,7 +99,6 @@ extension LocalVideoPlayerView {
 
 class PlayerManager : ObservableObject {
     var player: AVPlayer
-    var insideAd: InsideAd
     
     @Published private var playing = false
     @Binding var insideAdCallback: InsideAdCallbackType
@@ -110,10 +106,9 @@ class PlayerManager : ObservableObject {
     private var observer: NSKeyValueObservation? = nil
     private var adRequestStatus: AdRequestStatus = .adRequested
     
-    init(url: URL, insideAdCallback:Binding<InsideAdCallbackType>, playing: Bool = false, insideAd: InsideAd) {
+    init(url: URL, insideAdCallback:Binding<InsideAdCallbackType>, playing: Bool = false) {
         self.playing = playing
         self._insideAdCallback = insideAdCallback
-        self.insideAd = insideAd
         let asset = AVAsset(url: url)
         let playerItem = AVPlayerItem(asset: asset)
         player = AVPlayer(playerItem: playerItem)
@@ -132,7 +127,6 @@ class PlayerManager : ObservableObject {
         player.pause()
         player.replaceCurrentItem(with: nil)
         playing = false
-        
         insideAdCallback = .ALL_ADS_COMPLETED
     }
     
@@ -149,7 +143,7 @@ class PlayerManager : ObservableObject {
         } else if status == .failed {
             if adRequestStatus == .adRequested {
                 adRequestStatus = .fallbackRequested
-                if let url = URL(string: insideAd.fallback?.url ?? "") {
+                if let url = URL(string: CampaignManager.shared.activeInsideAd?.fallback?.url ?? "") {
                     preparePlayer(url: url)
                     player.play()
                 }

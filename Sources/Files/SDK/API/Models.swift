@@ -73,28 +73,28 @@ public class CampaignAppModel: Codable {
     var properties: CampaignAppModelProperties?
 }
 
-class Placement: Codable {
+public class Placement: Codable {
     var id: String?
     var name: String?
     var viewType: String?
     var tags: [String]?
-    var ads: [InsideAd]?
-    var properties: PlacementProperties?
+    public var ads: [InsideAd]?
+    public var properties: PlacementProperties?
 }
 
-class PlacementProperties: Codable {
+public class PlacementProperties: Codable {
     var startAfterSeconds: Int?
     var showCloseButtonAfterSeconds: Int?
     var webSettings: WebSettings?
-    var intervalForReels: Int?
+    public var intervalForReels: Int?
 }
 
-class InsideAd: Codable {
+public class InsideAd: Codable {
     var id: String?
     var name: String?
     var description: String?
     var weight: Int?
-    var adType: AdType?
+    public  var adType: AdType?
     var resellerID: String?
     var fallBackID: String?
     var url: String?
@@ -107,7 +107,7 @@ class Fallback: Codable {
     var name: String?
     var description: String?
     var weight: Int?
-    var adType: AdType?
+    public var adType: AdType?
     var resellerID: String?
     var fallbackID: String?
     var url: String?
@@ -135,7 +135,7 @@ class WebSettings: Codable {
     var screen: [String]?
 }
 
-enum AdType: String, Codable {
+public enum AdType: String, Codable {
     case VAST
     case LOCAL_IMAGE
     case LOCAL_VIDEO
@@ -147,7 +147,7 @@ enum AdType: String, Codable {
         self = AdType(rawValue: fromRawValue) ?? .unsupported
     }
     
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let string = try container.decode(String.self)
         self = AdType(rawValue: string) ?? .unsupported

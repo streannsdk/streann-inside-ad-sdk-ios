@@ -11,15 +11,12 @@ import UIKit
 import AVFoundation
 
 class InsideAdViewController: UIViewController, ObservableObject {
-
     private var contentPlayhead: IMAAVPlayerContentPlayhead?
     private let adsLoader = IMAAdsLoader(settings: nil)
     private var adsManager: IMAAdsManager?
-    let imaSettings = IMASettings()
     private var volumeButton: UIButton?
     private var imaadPlayerView: UIView?
 
-    private var geoModel: GeoIp?
     private var insideAdHelper = InsideAdHelper()
     private var adRequestStatus: AdRequestStatus = .adRequested
     
@@ -27,10 +24,6 @@ class InsideAdViewController: UIViewController, ObservableObject {
     
     //Delegates
     var insideAdCallbackDelegate: InsideAdCallbackDelegate
-    
-    var insideAd: InsideAd?
-    var activePlacement: Placement?
-    var geoIp: GeoIp?
     
     init(insideAdCallbackDelegate: InsideAdCallbackDelegate) {
         self.insideAdCallbackDelegate = insideAdCallbackDelegate
@@ -43,29 +36,29 @@ class InsideAdViewController: UIViewController, ObservableObject {
     
     // MARK: - View controller lifecycle methods
     override func viewDidLoad() {
-         super.viewDidLoad()
-         addImmadPlayerView()
-         adsLoader.delegate = self
+        super.viewDidLoad()
+        addImmadPlayerView()
+        adsLoader.delegate = self
     }
     
     override func viewDidAppear(_ animated: Bool) {
         self.requestAds()
     }
      
-     override func viewWillLayoutSubviews() {
-          super.viewWillLayoutSubviews()
-          if let volumeButton = volumeButton{
-               view.bringSubviewToFront(volumeButton)
-          }
-     }
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        if let volumeButton = volumeButton{
+            view.bringSubviewToFront(volumeButton)
+        }
+    }
      
-     private func addImmadPlayerView(){
-          let newView = UIView(frame: CGRect(x: 0, y: 0, width: view.frame.width, height: view.frame.height))
-         //Make the view's background color to clear do not be visible when incative
-         newView.backgroundColor = .clear
-         view.addSubview(newView)
-         imaadPlayerView = view
-     }
+    private func addImmadPlayerView(){
+        let newView = UIView(frame: CGRect(x: 0, y: 0, width: view.frame.width, height: view.frame.height))
+        //Make the view's background color to clear do not be visible when incative
+        newView.backgroundColor = .clear
+        view.addSubview(newView)
+        imaadPlayerView = view
+    }
      
      private func addVolumeButton(){
           let button = UIButton(frame: CGRect(x: 5, y: 5, width: 20, height: 20))
@@ -88,17 +81,17 @@ class InsideAdViewController: UIViewController, ObservableObject {
           setImmadVolume()
      }
      
-     private func setImmadVolume(){
-          adsManager?.volume = Constants.ResellerInfo.isAdMuted ? 0 : 1
-          volumeButton?.setImage(UIImage(systemName: Constants.ResellerInfo.isAdMuted ? Constants.SystemImage.speakerSlashFill : Constants.SystemImage.speakerFill), for: .normal)
-     }
+    private func setImmadVolume(){
+        adsManager?.volume = Constants.ResellerInfo.isAdMuted ? 0 : 1
+        volumeButton?.setImage(UIImage(systemName: Constants.ResellerInfo.isAdMuted ? Constants.SystemImage.speakerSlashFill : Constants.SystemImage.speakerFill), for: .normal)
+    }
 
     // MARK: IMA integration methods
     func requestAds() {
-        let activeInsideAd = insideAd
+        let activeInsideAd = CampaignManager.shared.activeInsideAd
         let url = adRequestStatus == .adRequested ? activeInsideAd?.url : activeInsideAd?.fallback?.url
-        
-        if let url = url, let geoIp = geoIp{
+
+        if let url = url, let geoIp = CampaignManager.shared.geoIp {
             //Populate macros
             let adTagUrl = self.insideAdHelper.populateVastFrom(adUrl: url, geoModel: geoIp, playerSize: self.viewSize)
             
@@ -113,12 +106,12 @@ class InsideAdViewController: UIViewController, ObservableObject {
                 contentPlayhead: self.contentPlayhead,
                 userContext: nil)
             
-//            let startAfterSeconds:Double = Double(activePlacement?.properties?.startAfterSeconds ?? 0) 
+            let startAfterSeconds:Double = CampaignManager.shared.activeInsideAd?.adType != .FULLSCREEN_NATIVE ? Double(CampaignManager.shared.activePlacement?.properties?.startAfterSeconds ?? 0) : 0
             
-//            DispatchQueue.main.asyncAfter(deadline: .now() + startAfterSeconds) {[weak self] in
-                self.adsLoader.requestAds(with: request)
-                self.adRequestStatus = (self.adRequestStatus == .fallbackRequested) ? .adRequested : .fallbackRequested
-//            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + startAfterSeconds) {[weak self] in
+                self?.adsLoader.requestAds(with: request)
+                self?.adRequestStatus = (self?.adRequestStatus == .fallbackRequested) ? .adRequested : .fallbackRequested
+            }
         }
     }
 }
@@ -195,15 +188,9 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
 
 struct InsideAdViewWrapper: UIViewControllerRepresentable {
     let parent: InsideAdView
-    var insideAd: InsideAd?
-    var activePlacement: Placement?
-    var geoIp: GeoIp?
         
     func makeUIViewController(context: Context) -> InsideAdViewController {
         let controller = InsideAdViewController(insideAdCallbackDelegate: parent)
-        controller.insideAd = insideAd
-        controller.activePlacement = activePlacement
-        controller.geoIp = geoIp
         return controller
     }
     

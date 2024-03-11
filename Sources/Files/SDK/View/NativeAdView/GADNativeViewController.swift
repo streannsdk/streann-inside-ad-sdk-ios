@@ -13,18 +13,12 @@ class GADNativeViewController: UIViewController {
     /// The height constraint applied to the ad view, where necessary.
     var heightConstraint: NSLayoutConstraint?
     
-    /// The ad loader. You must keep a strong reference to the GADAdLoader during the ad loading
-    /// process.
-    var adLoader: GADAdLoader!
-    
     /// The native ad view that is being presented.
     var nativeAdView: GADNativeAdView!
     
-    /// The ad unit ID.
-    let adUnitID = Constants.ResellerInfo.unitId
-    
     override func viewDidLoad() {
         super.viewDidLoad()
+        print("GADAdLoader viewDidLoad")
         
         guard
             let nibObjects = Bundle.module.loadNibNamed("NativeAdView", owner: nil, options: nil),
@@ -32,9 +26,9 @@ class GADNativeViewController: UIViewController {
         else {
             print("Could not load nib file for adView")
             return
+            //      assert(false, "Could not load nib file for adView")
         }
         self.setAdView(adView)
-        self.refreshAd()
     }
     
     func setAdView(_ view: GADNativeAdView) {
@@ -44,42 +38,97 @@ class GADNativeViewController: UIViewController {
         nativeAdView.callToActionView?.isHidden = true
         
         nativeAdView.translatesAutoresizingMaskIntoConstraints = false
-//
-//        // Layout constraints for positioning the native ad view to stretch the entire width and height
-//        // of the nativeAdPlaceholder.
-        let viewDictionary = ["_nativeAdView": nativeAdView!]
-        self.view.addConstraints(
-          NSLayoutConstraint.constraints(
-            withVisualFormat: "H:|[_nativeAdView]|",
-            options: NSLayoutConstraint.FormatOptions(rawValue: 0), metrics: nil, views: viewDictionary)
+        //
+        DispatchQueue.main.async { [weak self] in
+        //        // Layout constraints for positioning the native ad view to stretch the entire width and height
+        //        // of the nativeAdPlaceholder.
+            let viewDictionary = ["_nativeAdView": self?.nativeAdView!]
+        self?.view.addConstraints(
+            NSLayoutConstraint.constraints(
+                withVisualFormat: "H:|[_nativeAdView]|",
+                options: NSLayoutConstraint.FormatOptions(rawValue: 0), metrics: nil, views: viewDictionary as [String : Any])
         )
-        self.view.addConstraints(
-          NSLayoutConstraint.constraints(
-            withVisualFormat: "V:|[_nativeAdView]|",
-            options: NSLayoutConstraint.FormatOptions(rawValue: 0), metrics: nil, views: viewDictionary)
+        self?.view.addConstraints(
+            NSLayoutConstraint.constraints(
+                withVisualFormat: "V:|[_nativeAdView]|",
+                options: NSLayoutConstraint.FormatOptions(rawValue: 0), metrics: nil, views: viewDictionary as [String : Any])
         )
+       
+            self?.heightConstraint?.isActive = false
+        
+        // Populate the native ad view with the native ad assets.
+        // The headline and mediaContent are guaranteed to be present in every native ad.
+            (self?.nativeAdView.headlineView as? UILabel)?.text = CampaignManager.shared.adLoader?.nativeAd?.headline
+            self?.nativeAdView.mediaView?.mediaContent = CampaignManager.shared.adLoader?.nativeAd?.mediaContent
+        
+        // Some native ads will include a video asset, while others do not. Apps can use the
+        // GADVideoController's hasVideoContent property to determine if one is present, and adjust their
+        // UI accordingly.
+        let mediaContent = CampaignManager.shared.adLoader!.nativeAd?.mediaContent
+        if ((mediaContent?.hasVideoContent) != nil) {
+            // By acting as the delegate to the GADVideoController, this ViewController receives messages
+            // about events in the video lifecycle.
+            mediaContent?.videoController.delegate = self
+            print("Ad contains a video asset.")
+        } else {
+            print("Ad does not contain a video.")
+        }
+        
+        // This app us9es a fixed width for the GADMediaView and changes its height to match the aspect
+        // ratio of the media it displays.
+            if let mediaView = self?.nativeAdView.mediaView, CampaignManager.shared.adLoader?.nativeAd?.mediaContent.aspectRatio ?? 0 > 0 {
+                self?.heightConstraint = NSLayoutConstraint(
+                item: mediaView,
+                attribute: .height,
+                relatedBy: .equal,
+                toItem: mediaView,
+                attribute: .width,
+                multiplier: CGFloat(1 / (CampaignManager.shared.adLoader?.nativeAd?.mediaContent.aspectRatio ?? 0)),
+                constant: 0)
+                self?.heightConstraint?.isActive = true
+        }
+        
+        let color = CampaignManager.shared.adLoader?.nativeAd?.mediaContent.mainImage?.averageColor
+            self?.setGradientBackground(averageColor: color ?? .black)
+        
+        // These assets are not guaranteed to be present. Check that they are before
+        // showing or hiding them.
+            (self?.nativeAdView.bodyView as? UILabel)?.text = CampaignManager.shared.adLoader?.nativeAd?.body
+            self?.nativeAdView.bodyView?.isHidden = CampaignManager.shared.adLoader?.nativeAd?.body == nil
+        
+            (self?.nativeAdView.callToActionView as? UIButton)?.setTitle(CampaignManager.shared.adLoader?.nativeAd?.callToAction, for: .normal)
+            self?.nativeAdView.callToActionView?.isHidden = CampaignManager.shared.adLoader?.nativeAd?.callToAction == nil
+        
+            (self?.nativeAdView.iconView as? UIImageView)?.image = CampaignManager.shared.adLoader?.nativeAd?.icon?.image
+            self?.nativeAdView.iconView?.isHidden = CampaignManager.shared.adLoader?.nativeAd?.icon == nil
+        
+            (self?.nativeAdView.starRatingView as? UIImageView)?.image = self?.imageOfStars(from: CampaignManager.shared.adLoader?.nativeAd?.starRating)
+            self?.nativeAdView.starRatingView?.isHidden = CampaignManager.shared.adLoader?.nativeAd?.starRating == nil
+        
+            (self?.nativeAdView.storeView as? UILabel)?.text = CampaignManager.shared.adLoader?.nativeAd?.store
+            self?.nativeAdView.storeView?.isHidden = CampaignManager.shared.adLoader?.nativeAd?.store == nil
+        
+            (self?.nativeAdView.priceView as? UILabel)?.text = CampaignManager.shared.adLoader?.nativeAd?.price
+            self?.nativeAdView.priceView?.isHidden = CampaignManager.shared.adLoader?.nativeAd?.price == nil
+        
+            (self?.nativeAdView.advertiserView as? UILabel)?.text = CampaignManager.shared.adLoader?.nativeAd?.advertiser
+            self?.nativeAdView.advertiserView?.isHidden = CampaignManager.shared.adLoader?.nativeAd?.advertiser == nil
+        
+        // In order for the SDK to process touch events properly, user interaction should be disabled.
+            self?.nativeAdView.callToActionView?.isUserInteractionEnabled = false
+            self?.nativeAdView.callToActionView?.isHidden = CampaignManager.shared.adLoader?.nativeAd?.store == nil
+            self?.nativeAdView.callToActionView?.sizeToFit()
+        
+    }
     }
     
-    // MARK: - Actions
-    
-    /// Refreshes the native ad.
-    func refreshAd() {
-        let aspectRatioOption = GADNativeAdMediaAdLoaderOptions()
-        aspectRatioOption.mediaAspectRatio = .any
-        adLoader = GADAdLoader(
-            adUnitID: adUnitID, 
-            rootViewController: self,
-            adTypes: [.native], 
-            options: [aspectRatioOption])
-        adLoader.delegate = self
-        adLoader.load(GADRequest())
-        
-        print("GADAdLoader load ad")
+    func displayLoadedAd(nativeAd: GADNativeAd) {
+        nativeAdView.nativeAd = nativeAd
     }
     
     /// Returns a `UIImage` representing the number of stars from the given star rating; returns `nil`
     /// if the star rating is less than 3.5 stars.
-    func imageOfStars(from starRating: NSDecimalNumber?) -> UIImage? {
+    private func imageOfStars(from starRating: NSDecimalNumber?) -> UIImage? {
         guard let rating = starRating?.doubleValue else {
             return nil
         }
@@ -103,7 +152,7 @@ extension GADNativeViewController: GADVideoControllerDelegate {
     }
 }
 
-extension GADNativeViewController: GADNativeAdLoaderDelegate {
+extension GADNativeViewController {
     
     private func setGradientBackground(averageColor: UIColor) {
         let colorTop =  averageColor.cgColor
@@ -116,92 +165,9 @@ extension GADNativeViewController: GADNativeAdLoaderDelegate {
         
         nativeAdView.mediaView?.layer.insertSublayer(gradientLayer, at: 0)
     }
-    
-    func adLoader(_ adLoader: GADAdLoader, didReceive nativeAd: GADNativeAd) {
-        
-        // Set ourselves as the native ad delegate to be notified of native ad events.
-        nativeAd.delegate = self
-        
-        // Deactivate the height constraint that was set when the previous video ad loaded.
-        heightConstraint?.isActive = false
-        
-        // Populate the native ad view with the native ad assets.
-        // The headline and mediaContent are guaranteed to be present in every native ad.
-        (nativeAdView.headlineView as? UILabel)?.text = nativeAd.headline
-        nativeAdView.mediaView?.mediaContent = nativeAd.mediaContent
-        
-        // Some native ads will include a video asset, while others do not. Apps can use the
-        // GADVideoController's hasVideoContent property to determine if one is present, and adjust their
-        // UI accordingly.
-        let mediaContent = nativeAd.mediaContent
-        if mediaContent.hasVideoContent {
-            // By acting as the delegate to the GADVideoController, this ViewController receives messages
-            // about events in the video lifecycle.
-            mediaContent.videoController.delegate = self
-            print("Ad contains a video asset.")
-        } else {
-            print("Ad does not contain a video.")
-        }
-        
-        // This app us9es a fixed width for the GADMediaView and changes its height to match the aspect
-        // ratio of the media it displays.
-        if let mediaView = nativeAdView.mediaView, nativeAd.mediaContent.aspectRatio > 0 {
-            heightConstraint = NSLayoutConstraint(
-                item: mediaView,
-                attribute: .height,
-                relatedBy: .equal,
-                toItem: mediaView,
-                attribute: .width,
-                multiplier: CGFloat(1 / nativeAd.mediaContent.aspectRatio),
-                constant: 0)
-            heightConstraint?.isActive = true
-        }
-        
-        let color = nativeAd.mediaContent.mainImage?.averageColor
-        setGradientBackground(averageColor: color ?? .black)
-        
-        // These assets are not guaranteed to be present. Check that they are before
-        // showing or hiding them.
-        (nativeAdView.bodyView as? UILabel)?.text = nativeAd.body
-        nativeAdView.bodyView?.isHidden = nativeAd.body == nil
-        
-        (nativeAdView.callToActionView as? UIButton)?.setTitle(nativeAd.callToAction, for: .normal)
-        nativeAdView.callToActionView?.isHidden = nativeAd.callToAction == nil
-        
-        (nativeAdView.iconView as? UIImageView)?.image = nativeAd.icon?.image
-        nativeAdView.iconView?.isHidden = nativeAd.icon == nil
-        
-        (nativeAdView.starRatingView as? UIImageView)?.image = imageOfStars(from: nativeAd.starRating)
-        nativeAdView.starRatingView?.isHidden = nativeAd.starRating == nil
-        
-        (nativeAdView.storeView as? UILabel)?.text = nativeAd.store
-        nativeAdView.storeView?.isHidden = nativeAd.store == nil
-        
-        (nativeAdView.priceView as? UILabel)?.text = nativeAd.price
-        nativeAdView.priceView?.isHidden = nativeAd.price == nil
-        
-        (nativeAdView.advertiserView as? UILabel)?.text = nativeAd.advertiser
-        nativeAdView.advertiserView?.isHidden = nativeAd.advertiser == nil
-        
-        // In order for the SDK to process touch events properly, user interaction should be disabled.
-        nativeAdView.callToActionView?.isUserInteractionEnabled = false
-        nativeAdView.callToActionView?.isHidden = nativeAd.store == nil
-        nativeAdView.callToActionView?.sizeToFit()
-        
-        
-        // Associate the native ad view with the native ad object. This is
-        // required to make the ad clickable.
-        // Note: this should always be done after populating the ad views.
-        nativeAdView.nativeAd = nativeAd
-    }
-    
-    func adLoader(_ adLoader: GADAdLoader, didFailToReceiveAdWithError error: Error) {
-        print("\(adLoader) failed with error: \(error.localizedDescription)")
-    }
 }
 
 // MARK: - GADNativeAdDelegate implementation
-
 extension GADNativeViewController: GADNativeAdDelegate {
     
     func nativeAdDidRecordClick(_ nativeAd: GADNativeAd) {

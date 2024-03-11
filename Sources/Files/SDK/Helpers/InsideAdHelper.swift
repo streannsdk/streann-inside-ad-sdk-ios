@@ -342,20 +342,25 @@ class CampaignManager {
     init() {
         getAllCampaigns()
     }
+    
+    var adLoader: NativeAdLoaderViewModel?
     var allCampaigns: [CampaignAppModel]?
     var geoIp: GeoIp?
+    var activeCampaign: CampaignAppModel?
+    var activeInsideAd: InsideAd?
+    var activePlacement: Placement?
+    var placements: [Placement]?
+    var nativeAdUnitId = ""
     
     private func getAllCampaigns() {
         if Constants.ResellerInfo.apiKey == "" {
             let errorMsg = "Api Key is required. Please implement the initializeSdk method."
             print(Logger.log(errorMsg))
-            //            insideAdCallback = .IMAAdError(errorMsg)
         }
         
         if Constants.ResellerInfo.baseUrl == "" {
             let errorMsg = "Base Url is required. Please implement the initializeSdk method."
             print(Logger.log(errorMsg))
-            //            insideAdCallback = .IMAAdError(errorMsg)
         }
         
         SDKAPI.getGeoIpUrl { geoIpUrl, error in
@@ -366,10 +371,17 @@ class CampaignManager {
                             DispatchQueue.main.async {
                                 CampaignManager.shared.geoIp = geoIp
                                 
-                                SDKAPI.getCampaigns(countryCode: CampaignManager.shared.geoIp?.countryCode ?? "") { campaigns, error in
+                                SDKAPI.getCampaigns(countryCode: CampaignManager.shared.geoIp?.countryCode ?? "") { [weak self] campaigns, error in
                                     DispatchQueue.main.async {
                                         if let campaigns {
                                             CampaignManager.shared.allCampaigns = campaigns
+                                            
+                                            if let activeCampaign = CampaignManager.shared.allCampaigns?.getActiveCampaign() {
+                                                self?.activeCampaign = activeCampaign
+                                                self?.placements = activeCampaign.placements
+                                                self?.nativeAdUnitId = CampaignManager.shared.placements?.flatMap { $0.ads ?? [] }.first(where: { $0.adType == .FULLSCREEN_NATIVE })?.url ?? ""
+                                                self?.adLoader = NativeAdLoaderViewModel()
+                                            }
                                         } else {
                                             let errorMsg = Logger.log("Error while getting AD.")
                                             print(Logger.log(errorMsg))
