@@ -53,7 +53,6 @@ userGender: UserGender? = nil) {
             Constants.ResellerInfo.isAdMuted = isAdMuted
             CampaignManager.shared.activePlacement = CampaignManager.shared.placements?.getInsideAdByPlacement(screen: screen).1
             CampaignManager.shared.activeInsideAd = CampaignManager.shared.placements?.getInsideAdByPlacement(screen: screen).0
-            InsideAdSdk.shared.activePlacement = CampaignManager.shared.activePlacement
         }
 
         var body: some View {
