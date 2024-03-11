@@ -343,12 +343,23 @@ class CampaignManager {
         getAllCampaigns()
     }
     
-    var adLoader: NativeAdLoaderViewModel?
-    var allCampaigns: [CampaignAppModel]?
-    var geoIp: GeoIp?
-    var activeCampaign: CampaignAppModel?
-    var activeInsideAd: InsideAd?
-    var activePlacement: Placement?
+   var adLoader: NativeAdLoaderViewModel?
+   var allCampaigns: [CampaignAppModel]?
+   var geoIp: GeoIp?
+   var activeCampaign: CampaignAppModel?
+    
+   var activeInsideAd: InsideAd? {
+       didSet {
+           InsideAdSdk.shared.activeInsideAd = activeInsideAd
+       }
+   }
+    
+   var activePlacement: Placement? {
+       didSet {
+           InsideAdSdk.shared.activePlacement = activePlacement
+       }
+   }
+    
     var placements: [Placement]?
     var nativeAdUnitId = ""
     
