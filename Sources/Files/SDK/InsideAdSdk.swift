@@ -10,6 +10,7 @@ import SwiftUI
 public class InsideAdSdk {
     public static let shared = InsideAdSdk()
     public var activePlacement: Placement?
+    public var activeInsideAd: InsideAd?
     
     public init(baseUrl: String,
                 apiKey: String,
