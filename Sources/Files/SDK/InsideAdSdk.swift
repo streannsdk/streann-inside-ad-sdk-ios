@@ -35,11 +35,15 @@ userGender: UserGender? = nil) {
     
     @ViewBuilder
     public func insideAdView(screen: String, insideAdCallback: Binding<InsideAdCallbackType>, isAdMuted: Bool = false) -> some View {
-        AdsContentView(screen: screen, insideAdCallback: insideAdCallback, isAdMuted: isAdMuted)
+        AdsContentView(screen: screen, insideAdCallback: insideAdCallback, isAdMuted: isAdMuted).equatable()
     }
     
-    struct AdsContentView: View {
-        var screen: String
+    struct AdsContentView: View, Equatable {
+        
+        static func == (lhs: InsideAdSdk.AdsContentView, rhs: InsideAdSdk.AdsContentView) -> Bool {
+            lhs.adViewId == rhs.adViewId
+        }
+        
         var insideAdCallback: Binding<InsideAdCallbackType>
         
         @State var adViewId = UUID()
@@ -48,13 +52,11 @@ userGender: UserGender? = nil) {
         @State private var adViewWidth: CGFloat = 0
         
         public init(screen:String, insideAdCallback: Binding<InsideAdCallbackType>, isAdMuted: Bool) {
-            self.screen = screen
             self.insideAdCallback = insideAdCallback
             Constants.ResellerInfo.isAdMuted = isAdMuted
-            CampaignManager.shared.activePlacement = CampaignManager.shared.placements?.getInsideAdByPlacement(screen: screen).1
-            CampaignManager.shared.activeInsideAd = CampaignManager.shared.placements?.getInsideAdByPlacement(screen: screen).0
+            CampaignManager.shared.screen = screen
         }
-
+        
         var body: some View {
             InsideAdView(insideAdCallback: insideAdCallback)
                 .id(adViewId)
@@ -69,6 +71,7 @@ userGender: UserGender? = nil) {
                 })
                 .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_startTimer), perform: { _ in
                     var intervalInMinutes = Constants.ResellerInfo.intervalInMinutes
+                    
                     if let intervalInMinutesCamp = CampaignManager.shared.activeCampaign?.properties?.intervalInMinutes {
                         intervalInMinutes = intervalInMinutesCamp
                     }
