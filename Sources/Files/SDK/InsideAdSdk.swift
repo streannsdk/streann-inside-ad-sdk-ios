@@ -44,6 +44,7 @@ userGender: UserGender? = nil) {
         static func == (lhs: InsideAdSdk.AdsContentView, rhs: InsideAdSdk.AdsContentView) -> Bool {
             lhs.adViewId == rhs.adViewId
         }
+        
         var insideAdCallback: Binding<InsideAdCallbackType>
         
         @State var adViewId = UUID()
@@ -59,6 +60,7 @@ userGender: UserGender? = nil) {
 
         var body: some View {
             InsideAdView(insideAdCallback: insideAdCallback)
+                .equatable()
                 .id(adViewId)
                 .frame(maxWidth: adViewWidth, maxHeight: adViewHeight)
                 .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_setFullSize), perform: { _ in
