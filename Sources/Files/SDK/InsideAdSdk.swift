@@ -39,11 +39,11 @@ userGender: UserGender? = nil) {
         AdsContentView(screen: screen, insideAdCallback: insideAdCallback, isAdMuted: isAdMuted)
     }
     
-    struct AdsContentView: View {
+       struct AdsContentView: View, Equatable {
         
-        // static func == (lhs: InsideAdSdk.AdsContentView, rhs: InsideAdSdk.AdsContentView) -> Bool {
-        //     lhs.adViewId == rhs.adViewId
-        // }
+        static func == (lhs: InsideAdSdk.AdsContentView, rhs: InsideAdSdk.AdsContentView) -> Bool {
+            lhs.adViewId == rhs.adViewId
+        }
         
         var insideAdCallback: Binding<InsideAdCallbackType>
         
@@ -51,45 +51,65 @@ userGender: UserGender? = nil) {
         @State var timerNextAd: Timer? = nil
         @State private var adViewHeight: CGFloat = 0
         @State private var adViewWidth: CGFloat = 0
-        
+        @State private var orientation: UIDeviceOrientation = UIDevice.current.orientation
         public init(screen:String, insideAdCallback: Binding<InsideAdCallbackType>, isAdMuted: Bool) {
             self.insideAdCallback = insideAdCallback
             Constants.ResellerInfo.isAdMuted = isAdMuted
             CampaignManager.shared.screen = screen
         }
-
+        
         var body: some View {
-            InsideAdView(insideAdCallback: insideAdCallback)
-                // .equatable()
-                // .id(adViewId)
-                .frame(maxWidth: adViewWidth, maxHeight: adViewHeight)
-                .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_setFullSize), perform: { _ in
-                    adViewHeight = UIScreen.main.bounds.width / 16 * 9
-                    adViewWidth = .infinity
-                })
-                .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_setZeroSize), perform: { _ in
-                    adViewHeight = 0
-                    adViewWidth = 0
-                })
-                .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_startTimer), perform: { _ in
-                    var intervalInMinutes = Constants.ResellerInfo.intervalInMinutes
-                    if let intervalInMinutesCamp = CampaignManager.shared.activeCampaign?.properties?.intervalInMinutes {
-                        intervalInMinutes = intervalInMinutesCamp
-                    }
-                    
-                    if let intervalInMinutes, intervalInMinutes > 0 {
-                        print(Logger.log("Timer started for next ad - intervalInMinutes \(intervalInMinutes)"))
-                        timerNextAd = Timer.scheduledTimer(withTimeInterval: TimeInterval(intervalInMinutes.convertMinutesToSeconds()), repeats: false){ _ in
-                            adViewId = UUID()
+            VStack {
+                InsideAdView(insideAdCallback: insideAdCallback)
+                    .equatable()
+                    .id(adViewId)
+                    .frame(maxWidth: adViewWidth, maxHeight: adViewHeight)
+                    .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_setFullSize), perform: { _ in
+                        adViewHeight = UIScreen.main.bounds.width / 16 * 9
+                        adViewWidth = .infinity
+                    })
+                    .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_setZeroSize), perform: { _ in
+                        adViewHeight = 0
+                        adViewWidth = 0
+                    })
+                    .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_startTimer), perform: { _ in
+                        var intervalInMinutes = Constants.ResellerInfo.intervalInMinutes
+                        
+                        if let intervalInMinutesCamp = CampaignManager.shared.activeCampaign?.properties?.intervalInMinutes {
+                            intervalInMinutes = intervalInMinutesCamp
                         }
-                    }else{
-                        print(Logger.log("Timer not started - intervalInMinutes \(intervalInMinutes ?? 0)"))
+                        
+                        if let intervalInMinutes, intervalInMinutes > 0 {
+                            print(Logger.log("Timer started for next ad - intervalInMinutes \(intervalInMinutes)"))
+                            timerNextAd = Timer.scheduledTimer(withTimeInterval: TimeInterval(intervalInMinutes.convertMinutesToSeconds()), repeats: false){ _ in
+                                adViewId = UUID()
+                            }
+                        }else{
+                            print(Logger.log("Timer not started - intervalInMinutes \(intervalInMinutes ?? 0)"))
+                        }
+                    })
+                    .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_stopTimer), perform: { _ in
+                        timerNextAd?.invalidate()
+                        timerNextAd = nil
+                    })
+                    .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
+                        let newOrientation = UIDevice.current.orientation
+                        if newOrientation != self.orientation {
+                            self.orientation = newOrientation
+                        }
                     }
-                })
-                .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_stopTimer), perform: { _ in
-                    timerNextAd?.invalidate()
-                    timerNextAd = nil
-                })
+                    .modifier(DeviceOrientationLock(orientation: orientation))
+            }
         }
+    }
+}
+
+
+struct DeviceOrientationLock: ViewModifier {
+    let orientation: UIDeviceOrientation
+    
+    func body(content: Content) -> some View {
+        content
+            .dynamicTypeSize(.xLarge)
     }
 }
