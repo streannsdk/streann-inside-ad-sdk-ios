@@ -11,11 +11,18 @@ public protocol InsideAdCallbackDelegate {
     func insideAdCallbackReceived(data: InsideAdCallbackType)
 }
 
-public struct InsideAdView: View, InsideAdCallbackDelegate {
+public struct InsideAdView: View, InsideAdCallbackDelegate, Equatable {
+    
+    public static func == (lhs: InsideAdView, rhs: InsideAdView) -> Bool {
+        lhs.adViewId == rhs.adViewId
+    }
+    
      @Binding var insideAdCallback: InsideAdCallbackType
      
      @State var loadingAdError = false
      @State var reload = false
+    
+    let adViewId = UUID()
 
      init(insideAdCallback: Binding<InsideAdCallbackType>) {
           _insideAdCallback = insideAdCallback
