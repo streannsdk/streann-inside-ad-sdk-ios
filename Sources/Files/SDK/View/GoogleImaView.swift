@@ -153,11 +153,15 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     // MARK: - IMAAdsManagerDelegate
     func adsManager(_ adsManager: IMAAdsManager, didReceive event: IMAAdEvent) {
         if event.type == IMAAdEventType.LOADED {
-            //Add the volume button only when ads is loaded
-            addVolumeButton()
             // When the SDK notifies us that ads have been loaded, play them.
             adsManager.start()
         }
+        
+        if event.type == IMAAdEventType.STARTED {
+            //Add the volume button only when ads is started
+            addVolumeButton()
+        }
+        
         insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertEventType(type: event.type))
         print(Logger.log(event.typeString))
     }

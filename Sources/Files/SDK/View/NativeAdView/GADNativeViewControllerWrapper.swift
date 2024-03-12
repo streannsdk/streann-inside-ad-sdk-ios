@@ -34,16 +34,18 @@ struct NativeAdView: View {
 class NativeAdLoaderViewModel: NSObject, ObservableObject {
     @Published var nativeAd: GADNativeAd?
     private var adLoader: GADAdLoader?
+    private var unitId = ""
     
-    override init() {
-        super.init() // Call to the superclass's initializer is required
+    init(unitAd: String) {
+        super.init()
+        self.unitId = unitAd
         loadAd()
     }
     
     func loadAd() {
         let options = GADNativeAdMediaAdLoaderOptions()
         options.mediaAspectRatio = .any
-        adLoader = GADAdLoader(adUnitID: CampaignManager.shared.nativeAdUnitId, rootViewController: createRootController(), adTypes: [.native], options: [options])
+        adLoader = GADAdLoader(adUnitID: unitId, rootViewController: createRootController(), adTypes: [.native], options: [options])
         adLoader?.delegate = self
         adLoader?.load(GADRequest())
     }

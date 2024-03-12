@@ -343,22 +343,29 @@ class CampaignManager {
         getAllCampaigns()
     }
     
-   var adLoader: NativeAdLoaderViewModel?
-   var allCampaigns: [CampaignAppModel]?
-   var geoIp: GeoIp?
-   var activeCampaign: CampaignAppModel?
+    var adLoader: NativeAdLoaderViewModel?
+    var allCampaigns: [CampaignAppModel]?
+    var geoIp: GeoIp?
+    var activeCampaign: CampaignAppModel?
     
-   var activeInsideAd: InsideAd? {
-       didSet {
-           InsideAdSdk.shared.activeInsideAd = activeInsideAd
-       }
-   }
+    var screen = "" {
+        didSet {
+            self.activePlacement = self.placements?.getInsideAdByPlacement(screen: screen).1
+            self.activeInsideAd = self.placements?.getInsideAdByPlacement(screen: screen).0
+        }
+    }
     
-   var activePlacement: Placement? {
-       didSet {
-           InsideAdSdk.shared.activePlacement = activePlacement
-       }
-   }
+    var activeInsideAd: InsideAd? {
+        didSet {
+            InsideAdSdk.shared.activeInsideAd = activeInsideAd
+        }
+    }
+    
+    var activePlacement: Placement? {
+        didSet {
+            InsideAdSdk.shared.activePlacement = activePlacement
+        }
+    }
     
     var placements: [Placement]?
     var nativeAdUnitId = ""
@@ -390,8 +397,11 @@ class CampaignManager {
                                             if let activeCampaign = CampaignManager.shared.allCampaigns?.getActiveCampaign() {
                                                 self?.activeCampaign = activeCampaign
                                                 self?.placements = activeCampaign.placements
-                                                self?.nativeAdUnitId = CampaignManager.shared.placements?.flatMap { $0.ads ?? [] }.first(where: { $0.adType == .FULLSCREEN_NATIVE })?.url ?? ""
-                                                self?.adLoader = NativeAdLoaderViewModel()
+                                                
+                                                if let unitId = CampaignManager.shared.placements?.flatMap({ $0.ads ?? []  }).first(where: { $0.adType == .FULLSCREEN_NATIVE })?.url {
+                                                    self?.adLoader = NativeAdLoaderViewModel(unitAd: unitId)
+                                                }
+                                                self?.checkIfAdHasTagForReels()
                                             }
                                         } else {
                                             let errorMsg = Logger.log("Error while getting AD.")
@@ -405,6 +415,10 @@ class CampaignManager {
                 }
             }
         }
+    }
+    
+    private func checkIfAdHasTagForReels() {
+        InsideAdSdk.shared.hasAdForReels = ((placements?.forEach { $0.tags?.forEach { if $0 == "Reels" { print($0) } } }) != nil)
     }
 }
 

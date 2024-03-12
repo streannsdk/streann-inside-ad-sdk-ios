@@ -11,6 +11,7 @@ public class InsideAdSdk {
     public static let shared = InsideAdSdk()
     public var activePlacement: Placement?
     public var activeInsideAd: InsideAd?
+    public var hasAdForReels: Bool = false
     
     public init(baseUrl: String,
                 apiKey: String,
@@ -35,15 +36,10 @@ userGender: UserGender? = nil) {
     
     @ViewBuilder
     public func insideAdView(screen: String, insideAdCallback: Binding<InsideAdCallbackType>, isAdMuted: Bool = false) -> some View {
-        AdsContentView(screen: screen, insideAdCallback: insideAdCallback, isAdMuted: isAdMuted).equatable()
+        AdsContentView(screen: screen, insideAdCallback: insideAdCallback, isAdMuted: isAdMuted)
     }
     
-    struct AdsContentView: View, Equatable {
-        
-        static func == (lhs: InsideAdSdk.AdsContentView, rhs: InsideAdSdk.AdsContentView) -> Bool {
-            lhs.adViewId == rhs.adViewId
-        }
-        
+    struct AdsContentView: View {
         var insideAdCallback: Binding<InsideAdCallbackType>
         
         @State var adViewId = UUID()
@@ -56,7 +52,7 @@ userGender: UserGender? = nil) {
             Constants.ResellerInfo.isAdMuted = isAdMuted
             CampaignManager.shared.screen = screen
         }
-        
+
         var body: some View {
             InsideAdView(insideAdCallback: insideAdCallback)
                 .id(adViewId)
@@ -71,7 +67,6 @@ userGender: UserGender? = nil) {
                 })
                 .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_startTimer), perform: { _ in
                     var intervalInMinutes = Constants.ResellerInfo.intervalInMinutes
-                    
                     if let intervalInMinutesCamp = CampaignManager.shared.activeCampaign?.properties?.intervalInMinutes {
                         intervalInMinutes = intervalInMinutesCamp
                     }
