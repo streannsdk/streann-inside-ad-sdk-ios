@@ -36,14 +36,14 @@ userGender: UserGender? = nil) {
     
     @ViewBuilder
     public func insideAdView(screen: String, insideAdCallback: Binding<InsideAdCallbackType>, isAdMuted: Bool = false) -> some View {
-        AdsContentView(screen: screen, insideAdCallback: insideAdCallback, isAdMuted: isAdMuted).equatable()
+        AdsContentView(screen: screen, insideAdCallback: insideAdCallback, isAdMuted: isAdMuted)
     }
     
-    struct AdsContentView: View, Equatable {
+    struct AdsContentView: View {
         
-        static func == (lhs: InsideAdSdk.AdsContentView, rhs: InsideAdSdk.AdsContentView) -> Bool {
-            lhs.adViewId == rhs.adViewId
-        }
+        // static func == (lhs: InsideAdSdk.AdsContentView, rhs: InsideAdSdk.AdsContentView) -> Bool {
+        //     lhs.adViewId == rhs.adViewId
+        // }
         
         var insideAdCallback: Binding<InsideAdCallbackType>
         
@@ -60,8 +60,8 @@ userGender: UserGender? = nil) {
 
         var body: some View {
             InsideAdView(insideAdCallback: insideAdCallback)
-                .equatable()
-                .id(adViewId)
+                // .equatable()
+                // .id(adViewId)
                 .frame(maxWidth: adViewWidth, maxHeight: adViewHeight)
                 .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_setFullSize), perform: { _ in
                     adViewHeight = UIScreen.main.bounds.width / 16 * 9
