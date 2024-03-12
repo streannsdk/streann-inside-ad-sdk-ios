@@ -36,10 +36,14 @@ userGender: UserGender? = nil) {
     
     @ViewBuilder
     public func insideAdView(screen: String, insideAdCallback: Binding<InsideAdCallbackType>, isAdMuted: Bool = false) -> some View {
-        AdsContentView(screen: screen, insideAdCallback: insideAdCallback, isAdMuted: isAdMuted)
+        AdsContentView(screen: screen, insideAdCallback: insideAdCallback, isAdMuted: isAdMuted).equatable()
     }
     
-    struct AdsContentView: View {
+    struct AdsContentView: View, Equatable {
+        
+        static func == (lhs: InsideAdSdk.AdsContentView, rhs: InsideAdSdk.AdsContentView) -> Bool {
+            lhs.adViewId == rhs.adViewId
+        }
         var insideAdCallback: Binding<InsideAdCallbackType>
         
         @State var adViewId = UUID()
