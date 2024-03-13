@@ -418,7 +418,7 @@ class CampaignManager {
     }
     
     private func checkIfAdHasTagForReels() {
-        InsideAdSdk.shared.hasAdForReels = placements?.contains { $0.tags?.contains("Reels") ?? false } ?? false
+        InsideAdSdk.shared.hasAdForReels = ((placements?.forEach { $0.tags?.forEach { if $0 == "Reels" { print($0) } } }) != nil)
     }
 }
 

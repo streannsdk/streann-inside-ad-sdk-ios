@@ -11,52 +11,47 @@ public protocol InsideAdCallbackDelegate {
     func insideAdCallbackReceived(data: InsideAdCallbackType)
 }
 
-public struct InsideAdView: View, InsideAdCallbackDelegate, Equatable {
-     
-     public static func == (lhs: InsideAdView, rhs: InsideAdView) -> Bool {
-         lhs.adViewId == rhs.adViewId
-     }
-     
+public struct InsideAdView: View, InsideAdCallbackDelegate {
      @Binding var insideAdCallback: InsideAdCallbackType
      
      @State var loadingAdError = false
      @State var reload = false
-     
-     let adViewId = UUID()
-     
+    
+    let adViewId = UUID()
+
      init(insideAdCallback: Binding<InsideAdCallbackType>) {
           _insideAdCallback = insideAdCallback
      }
      
      public var body: some View {
-          VStack {
-               if let activeInsideAd = CampaignManager.shared.activeInsideAd {
-                    switch activeInsideAd.adType {
-                    case .VAST:
+         Group {
+             if let activeInsideAd = CampaignManager.shared.activeInsideAd {
+                 switch activeInsideAd.adType {
+                     case .VAST:
                          InsideAdViewWrapper(parent: self)
                          
-                    case .LOCAL_IMAGE:
+                     case .LOCAL_IMAGE:
                          LocalImageView(insideAdCallback: $insideAdCallback)
                          
-                    case .LOCAL_VIDEO:
+                     case .LOCAL_VIDEO:
                          LocalVideoPlayerView(insideAdCallback: $insideAdCallback)
                          
-                    case .BANNER:
+                     case .BANNER:
                          BannerView(parent: self)
                          
-                    case .FULLSCREEN_NATIVE:
+                     case .FULLSCREEN_NATIVE:
                          NativeAdView()
                          
-                    case .unsupported:
+                     case .unsupported:
                          EmptyView()
                          
-                    case .none:
-                         EmptyView()
-                    }
-               } else {
-                    EmptyView()
-               }
-          }
+                     case .none:
+                     EmptyView()
+                 }
+             } else {
+                 EmptyView()
+             }
+         }
           .onChange(of: insideAdCallback, perform: { value in
                if value == .STARTED {
                     NotificationCenter.post(name: .AdsContentView_setFullSize)
