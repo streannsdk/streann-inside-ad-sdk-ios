@@ -15,19 +15,20 @@ class InsideAdViewController: UIViewController, ObservableObject {
     private let adsLoader = IMAAdsLoader(settings: nil)
     private var adsManager: IMAAdsManager?
     private var volumeButton: UIButton?
-    private var imaadPlayerView: UIView?
 
     private var insideAdHelper = InsideAdHelper()
     private var adRequestStatus: AdRequestStatus = .adRequested
+    var imaadPlayerView: UIView?
     
     var viewSize: CGSize = CGSize(width: 300, height: 250)
     
     //Delegates
-    var insideAdCallbackDelegate: InsideAdCallbackDelegate
+    var insideAdCallbackDelegate: InsideAdCallbackDelegate?
     
-    init(insideAdCallbackDelegate: InsideAdCallbackDelegate) {
-        self.insideAdCallbackDelegate = insideAdCallbackDelegate
+    init() {
         super.init(nibName: nil, bundle: nil)
+        adsLoader.delegate = self
+        addImmadPlayerView()
     }
     
     required init?(coder: NSCoder) {
@@ -37,12 +38,6 @@ class InsideAdViewController: UIViewController, ObservableObject {
     // MARK: - View controller lifecycle methods
     override func viewDidLoad() {
         super.viewDidLoad()
-        addImmadPlayerView()
-        adsLoader.delegate = self
-    }
-    
-    override func viewDidAppear(_ animated: Bool) {
-        self.requestAds()
     }
      
     override func viewWillLayoutSubviews() {
@@ -51,14 +46,15 @@ class InsideAdViewController: UIViewController, ObservableObject {
             view.bringSubviewToFront(volumeButton)
         }
     }
-     
-    private func addImmadPlayerView(){
-        let newView = UIView(frame: CGRect(x: 0, y: 0, width: view.frame.width, height: view.frame.height))
-        //Make the view's background color to clear do not be visible when incative
-        newView.backgroundColor = .clear
-        view.addSubview(newView)
-        imaadPlayerView = view
-    }
+    
+   private func addImmadPlayerView(){
+       let newView = UIView(frame: CGRect(x: 0, y: 0, width: view.frame.width, height: view.frame.height))
+       //Make the view's background color to clear do not be visible when incative
+       newView.backgroundColor = .clear
+       view.addSubview(newView)
+       imaadPlayerView = view
+   }
+
      
      private func addVolumeButton(){
           let button = UIButton(frame: CGRect(x: 5, y: 5, width: 20, height: 20))
@@ -88,10 +84,10 @@ class InsideAdViewController: UIViewController, ObservableObject {
 
     // MARK: IMA integration methods
     func requestAds() {
-        let activeInsideAd = CampaignManager.shared.activeInsideAd
+        let activeInsideAd = InsideAdSdk.shared.activeInsideAd
         let url = adRequestStatus == .adRequested ? activeInsideAd?.url : activeInsideAd?.fallback?.url
 
-        if let url = url, let geoIp = CampaignManager.shared.geoIp {
+        if let url = url, let geoIp = InsideAdSdk.shared.campaignManager.geoIp {
             //Populate macros
             let adTagUrl = self.insideAdHelper.populateVastFrom(adUrl: url, geoModel: geoIp, playerSize: self.viewSize)
             
@@ -106,7 +102,7 @@ class InsideAdViewController: UIViewController, ObservableObject {
                 contentPlayhead: self.contentPlayhead,
                 userContext: nil)
             
-            let startAfterSeconds:Double = CampaignManager.shared.activeInsideAd?.adType != .FULLSCREEN_NATIVE ? Double(CampaignManager.shared.activePlacement?.properties?.startAfterSeconds ?? 0) : 0
+            let startAfterSeconds:Double = InsideAdSdk.shared.activeInsideAd?.adType != .FULLSCREEN_NATIVE ? Double(InsideAdSdk.shared.activePlacement?.properties?.startAfterSeconds ?? 0) : 0
             
             DispatchQueue.main.asyncAfter(deadline: .now() + startAfterSeconds) {[weak self] in
                 self?.adsLoader.requestAds(with: request)
@@ -141,7 +137,7 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
         if adRequestStatus == .fallbackRequested {
             requestAds()
         } else {
-            insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: adErrorData.adError.message ?? ""))
+            insideAdCallbackDelegate?.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: adErrorData.adError.message ?? ""))
             adRequestStatus = .adRequested
             // Start the timer to call the next ad interval
             NotificationCenter.post(name: .AdsContentView_startTimer)
@@ -155,6 +151,12 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
         if event.type == IMAAdEventType.LOADED {
             // When the SDK notifies us that ads have been loaded, play them.
             adsManager.start()
+            
+        }
+        
+        if event.type == IMAAdEventType.RESUME {
+            //Add the volume button only when ads is started
+            adsManager.resume()
         }
         
         if event.type == IMAAdEventType.STARTED {
@@ -162,14 +164,14 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
             addVolumeButton()
         }
         
-        insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertEventType(type: event.type))
+        insideAdCallbackDelegate?.insideAdCallbackReceived(data: EventTypeHandler.convertEventType(type: event.type))
         print(Logger.log(event.typeString))
     }
     
     func adsManager(_ adsManager: IMAAdsManager, didReceive error: IMAAdError) {
         // Something went wrong with the ads manager after ads were loaded. Log the error and play the
         // content.
-        insideAdCallbackDelegate.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: error.message ?? ""))
+        insideAdCallbackDelegate?.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: error.message ?? ""))
         print(Logger.log("\(error.message ?? "Unknown error")"))
     }
     
@@ -184,33 +186,25 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
         volumeButton?.removeFromSuperview()
     }
     
-    
     func adsManagerAdDidStartBuffering(_ adsManager: IMAAdsManager) {
         print("buffering started")
     }
 }
 
-struct InsideAdViewWrapper: UIViewControllerRepresentable {
-    let parent: InsideAdView
-        
-    func makeUIViewController(context: Context) -> InsideAdViewController {
-        let controller = InsideAdViewController(insideAdCallbackDelegate: parent)
-        return controller
+struct VastViewWrapper: UIViewRepresentable, InsideAdCallbackDelegate {
+    @Binding var insideAdCallback: InsideAdCallbackType
+
+    func makeUIView(context: Context) -> UIView {
+        InsideAdSdk.shared.vastController.insideAdCallbackDelegate = self
+        return InsideAdSdk.shared.vastController.imaadPlayerView!
     }
     
-    func updateUIViewController(_ uiViewController: InsideAdViewController, context: Context) {
+    func updateUIView(_ uiViewController: UIView, context: Context) {
         //
     }
     
-    func makeCoordinator() -> Coordinator {
-        return Coordinator(parent: self)
-    }
-    
-    class Coordinator: NSObject, UITextFieldDelegate {
-        let parent: InsideAdViewWrapper
-        
-        init(parent: InsideAdViewWrapper) {
-            self.parent = parent
-        }
+    func insideAdCallbackReceived(data: InsideAdCallbackType) {
+        insideAdCallback = data
+        print("delegateState \(data)")
     }
 }

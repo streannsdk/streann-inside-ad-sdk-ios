@@ -181,12 +181,11 @@ extension CampaignAppModel: Comparable {
 
 extension Array where Array.Element == CampaignAppModel{
     
-    func getActiveCampaign() -> CampaignAppModel?{
+    func sortActiveCampaign() -> [CampaignAppModel]?{
         var activeCampaigns = self.filterCampaignsByDate()
         activeCampaigns = activeCampaigns.filterCampaignsByTimePeriod() ?? activeCampaigns
         activeCampaigns = activeCampaigns.sortByWeignt()
-        
-        return activeCampaigns.first ?? nil
+        return activeCampaigns
     }
     
     func filterCampaignsByDate(currentDate:Date = Date()) -> [CampaignAppModel]{
@@ -202,6 +201,10 @@ extension Array where Array.Element == CampaignAppModel{
     
     func sortByWeignt() -> [CampaignAppModel]{
         return self.sorted(by: { ($0.weight ?? -1000) > ($1.weight ?? -1000) })
+    }
+    
+    func findActiveCampaignFromActivePlacement(_ id: String ) -> CampaignAppModel? {
+        return self.first { $0.placements?.contains(where: { $0.id == id }) ?? false }
     }
 }
 

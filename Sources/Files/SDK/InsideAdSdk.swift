@@ -9,9 +9,18 @@ import SwiftUI
 
 public class InsideAdSdk {
     public static let shared = InsideAdSdk()
+    
     public var activePlacement: Placement?
     public var activeInsideAd: InsideAd?
+    public var activeCampaign: CampaignAppModel?
     public var hasAdForReels: Bool = false
+    
+    var vastController = InsideAdViewController()
+    
+    @State var bannerAdViewController = BannerAdViewController()
+    @State var campaignManager = CampaignManager()
+    @State var imageLoader = LocalImageLoaderManager()
+    @State var localVideoPlayerManager = LocalVideoPlayerManager()
     
     public init(baseUrl: String,
                 apiKey: String,
@@ -29,46 +38,49 @@ userGender: UserGender? = nil) {
         Constants.ResellerInfo.descriptionUrl = descriptionUrl ?? ""
         Constants.UserInfo.userBirthYear = userBirthYear
         Constants.UserInfo.userGender = userGender ?? .unknown
-        _ = CampaignManager.shared
+        campaignManager = CampaignManager()
     }
     
     public init() { }
     
     @ViewBuilder
     public func insideAdView(screen: String, insideAdCallback: Binding<InsideAdCallbackType>, isAdMuted: Bool = false) -> some View {
-        AdsContentView(screen: screen, insideAdCallback: insideAdCallback, isAdMuted: isAdMuted)
+        AdsContentView(screen: screen, insideAdCallback: insideAdCallback, isAdMuted: isAdMuted, campaignManager: campaignManager)
     }
     
     struct AdsContentView: View {
-        
+        @Environment(\.isPresented) var isPresented
+        @ObservedObject var campaignManager: CampaignManager
         var insideAdCallback: Binding<InsideAdCallbackType>
         
         @State var adViewId = UUID()
         @State var timerNextAd: Timer? = nil
-        @State private var adViewHeight: CGFloat = 0
-        @State private var adViewWidth: CGFloat = 0
         
-        public init(screen:String, insideAdCallback: Binding<InsideAdCallbackType>, isAdMuted: Bool) {
+        public init(screen:String, insideAdCallback: Binding<InsideAdCallbackType>, isAdMuted: Bool, campaignManager: CampaignManager) {
             self.insideAdCallback = insideAdCallback
             Constants.ResellerInfo.isAdMuted = isAdMuted
-            CampaignManager.shared.screen = screen
+            self.campaignManager = campaignManager
+            InsideAdSdk.shared.activePlacement = self.campaignManager.allPlacements.getInsideAdByPlacement(screen: screen).1
+            InsideAdSdk.shared.activeInsideAd = self.campaignManager.allPlacements.getInsideAdByPlacement(screen: screen).0
+            InsideAdSdk.shared.activeCampaign = self.campaignManager.allCampaigns.findActiveCampaignFromActivePlacement( InsideAdSdk.shared.activePlacement?.id ?? "")
         }
-
+        
         var body: some View {
             InsideAdView(insideAdCallback: insideAdCallback)
                 .id(adViewId)
-                .frame(maxWidth: adViewWidth, maxHeight: adViewHeight)
+                .frame(maxWidth: campaignManager.adViewWidth, maxHeight:  campaignManager.adViewHeight)
                 .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_setFullSize), perform: { _ in
-                    adViewHeight = UIScreen.main.bounds.width / 16 * 9
-                    adViewWidth = .infinity
+                    campaignManager.adViewHeight = UIScreen.main.bounds.width / 16 * 9
+                    campaignManager.adViewWidth = .infinity
                 })
                 .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_setZeroSize), perform: { _ in
-                    adViewHeight = 0
-                    adViewWidth = 0
+                    campaignManager.adViewHeight = 0
+                    campaignManager.adViewWidth = 0
                 })
                 .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_startTimer), perform: { _ in
                     var intervalInMinutes = Constants.ResellerInfo.intervalInMinutes
-                    if let intervalInMinutesCamp = CampaignManager.shared.activeCampaign?.properties?.intervalInMinutes {
+                    
+                    if let intervalInMinutesCamp = InsideAdSdk.shared.activeCampaign?.properties?.intervalInMinutes {
                         intervalInMinutes = intervalInMinutesCamp
                     }
                     
@@ -76,6 +88,16 @@ userGender: UserGender? = nil) {
                         print(Logger.log("Timer started for next ad - intervalInMinutes \(intervalInMinutes)"))
                         timerNextAd = Timer.scheduledTimer(withTimeInterval: TimeInterval(intervalInMinutes.convertMinutesToSeconds()), repeats: false){ _ in
                             adViewId = UUID()
+                            switch InsideAdSdk.shared.activeInsideAd?.adType {
+                                case .VAST:
+                                    InsideAdSdk.shared.campaignManager.vastRequested = false
+                                    InsideAdSdk.shared.vastController = InsideAdViewController()
+                                
+                                case.LOCAL_VIDEO:
+                                    InsideAdSdk.shared.localVideoPlayerManager.loadAsset()
+                                    
+                                default: break
+                            }
                         }
                     }else{
                         print(Logger.log("Timer not started - intervalInMinutes \(intervalInMinutes ?? 0)"))
@@ -85,6 +107,16 @@ userGender: UserGender? = nil) {
                     timerNextAd?.invalidate()
                     timerNextAd = nil
                 })
+                .onChange(of: isPresented) { presented in
+                    //Close the ad tasks when the view is dismissed
+                    if !presented {
+                        InsideAdSdk.shared.campaignManager.vastRequested = false
+                        InsideAdSdk.shared.vastController = InsideAdViewController()
+                        InsideAdSdk.shared.localVideoPlayerManager.stop()
+                        campaignManager.adViewHeight = 0
+                        campaignManager.adViewWidth = 0
+                    }
+                }
         }
     }
 }

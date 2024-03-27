@@ -336,49 +336,32 @@ enum AdRequestStatus {
     case fallbackRequested
 }
 
-class CampaignManager {
-    static var shared = CampaignManager()
+class CampaignManager: ObservableObject {
     
     init() {
         getAllCampaigns()
     }
     
+    @Published var adViewWidth: CGFloat = 0
+    @Published var adViewHeight: CGFloat = 0
+    
     var adLoader: NativeAdLoaderViewModel?
-    var allCampaigns: [CampaignAppModel]?
+    var allCampaigns = [CampaignAppModel]()
+    var allPlacements = [Placement]()
     var geoIp: GeoIp?
-    var activeCampaign: CampaignAppModel?
-    
-    var screen = "" {
-        didSet {
-            self.activePlacement = self.placements?.getInsideAdByPlacement(screen: screen).1
-            self.activeInsideAd = self.placements?.getInsideAdByPlacement(screen: screen).0
-        }
-    }
-    
-    var activeInsideAd: InsideAd? {
-        didSet {
-            InsideAdSdk.shared.activeInsideAd = activeInsideAd
-        }
-    }
-    
-    var activePlacement: Placement? {
-        didSet {
-            InsideAdSdk.shared.activePlacement = activePlacement
-        }
-    }
-    
-    var placements: [Placement]?
-    var nativeAdUnitId = ""
+    var vastRequested = false
     
     private func getAllCampaigns() {
         if Constants.ResellerInfo.apiKey == "" {
             let errorMsg = "Api Key is required. Please implement the initializeSdk method."
             print(Logger.log(errorMsg))
+            return
         }
         
         if Constants.ResellerInfo.baseUrl == "" {
             let errorMsg = "Base Url is required. Please implement the initializeSdk method."
             print(Logger.log(errorMsg))
+            return
         }
         
         SDKAPI.getGeoIpUrl { geoIpUrl, error in
@@ -387,22 +370,18 @@ class CampaignManager {
                     SDKAPI.getGeoIp(fromUrl: geoIpUrl.geoIpUrl) { geoIp, error in
                         if let geoIp {
                             DispatchQueue.main.async {
-                                CampaignManager.shared.geoIp = geoIp
+                                self.geoIp = geoIp
                                 
-                                SDKAPI.getCampaigns(countryCode: CampaignManager.shared.geoIp?.countryCode ?? "") { [weak self] campaigns, error in
+                                SDKAPI.getCampaigns(countryCode: self.geoIp?.countryCode ?? "") { campaigns, error in
                                     DispatchQueue.main.async {
                                         if let campaigns {
-                                            CampaignManager.shared.allCampaigns = campaigns
+                                            self.allCampaigns.append(campaigns.last!)// = campaigns.sortActiveCampaign()
+                                            self.allCampaigns.forEach { self.allPlacements.append(contentsOf: $0.placements ?? []) }
                                             
-                                            if let activeCampaign = CampaignManager.shared.allCampaigns?.getActiveCampaign() {
-                                                self?.activeCampaign = activeCampaign
-                                                self?.placements = activeCampaign.placements
-                                                
-                                                if let unitId = CampaignManager.shared.placements?.flatMap({ $0.ads ?? []  }).first(where: { $0.adType == .FULLSCREEN_NATIVE })?.url {
-                                                    self?.adLoader = NativeAdLoaderViewModel(unitAd: unitId)
-                                                }
-                                                self?.checkIfAdHasTagForReels()
+                                            if let unitId = self.allPlacements.flatMap({ $0.ads ?? []  }).first(where: { $0.adType == .FULLSCREEN_NATIVE })?.url {
+                                                self.adLoader = NativeAdLoaderViewModel(unitAd: unitId)
                                             }
+                                            self.checkIfAdHasTagForReels()
                                         } else {
                                             let errorMsg = Logger.log("Error while getting AD.")
                                             print(Logger.log(errorMsg))
@@ -418,7 +397,7 @@ class CampaignManager {
     }
     
     private func checkIfAdHasTagForReels() {
-        InsideAdSdk.shared.hasAdForReels = ((placements?.forEach { $0.tags?.forEach { if $0 == "Reels" { print($0) } } }) != nil)
+        InsideAdSdk.shared.hasAdForReels = allPlacements.contains { $0.tags?.contains("Reels") ?? false }
     }
 }
 
