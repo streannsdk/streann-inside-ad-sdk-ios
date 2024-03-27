@@ -375,7 +375,7 @@ class CampaignManager: ObservableObject {
                                 SDKAPI.getCampaigns(countryCode: self.geoIp?.countryCode ?? "") { campaigns, error in
                                     DispatchQueue.main.async {
                                         if let campaigns {
-                                            self.allCampaigns.append(campaigns.last!)// = campaigns.sortActiveCampaign()
+                                            self.allCampaigns = campaigns.sortActiveCampaign() ?? []
                                             self.allCampaigns.forEach { self.allPlacements.append(contentsOf: $0.placements ?? []) }
                                             
                                             if let unitId = self.allPlacements.flatMap({ $0.ads ?? []  }).first(where: { $0.adType == .FULLSCREEN_NATIVE })?.url {
@@ -397,7 +397,7 @@ class CampaignManager: ObservableObject {
     }
     
     private func checkIfAdHasTagForReels() {
-        InsideAdSdk.shared.hasAdForReels = allPlacements.contains { $0.tags?.contains("Reels") ?? false }
+        allPlacements.forEach { $0.tags?.forEach { if $0 == "Reels" { InsideAdSdk.shared.hasAdForReels = true } } }
     }
 }
 
