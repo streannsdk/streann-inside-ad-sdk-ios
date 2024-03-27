@@ -12,6 +12,7 @@ import Foundation
 extension NSNotification.Name {
     static let AdsContentView_setFullSize = Notification.Name("AdsContentView_setFullSize")
     static let AdsContentView_setZeroSize = Notification.Name("AdsContentView_setZeroSize")
+    static let AdsContentView_restoreSize = Notification.Name("AdsContentView_restoreSize")
     
     static let AdsContentView_startTimer = Notification.Name("AdsContentView_startTimer")
     static let AdsContentView_stopTimer = Notification.Name("AdsContentView_stopTimer")
