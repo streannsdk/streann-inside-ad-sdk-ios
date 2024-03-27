@@ -155,8 +155,13 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
         }
         
         if event.type == IMAAdEventType.RESUME {
-            //Add the volume button only when ads is started
             adsManager.resume()
+        }
+
+        if event.type == IMAAdEventType.TAPPED {
+            if !adsManager.adPlaybackInfo.isPlaying {
+                adsManager.resume()
+            }
         }
         
         if event.type == IMAAdEventType.STARTED {
