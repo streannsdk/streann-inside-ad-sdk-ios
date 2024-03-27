@@ -77,6 +77,16 @@ userGender: UserGender? = nil) {
                     campaignManager.adViewHeight = 0
                     campaignManager.adViewWidth = 0
                 })
+                .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_restoreSize), perform: { _ in
+                    //Reset the size of the vast view if user clicked on the vast ad link and return back in the app
+                    switch InsideAdSdk.shared.activeInsideAd?.adType {
+                    case .VAST:
+                        withAnimation {
+                            adViewId = UUID()
+                        }
+                    default: break
+                    }
+                })
                 .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_startTimer), perform: { _ in
                     var intervalInMinutes = Constants.ResellerInfo.intervalInMinutes
                     
