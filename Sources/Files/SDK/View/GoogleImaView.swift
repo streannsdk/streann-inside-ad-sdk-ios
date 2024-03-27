@@ -154,19 +154,20 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
             
         }
         
-        if event.type == IMAAdEventType.RESUME {
-            adsManager.resume()
+        if event.type == IMAAdEventType.STARTED {
+            //Add the volume button only when ads is started
+            addVolumeButton()
         }
-
+        
         if event.type == IMAAdEventType.TAPPED {
             if !adsManager.adPlaybackInfo.isPlaying {
                 adsManager.resume()
             }
         }
         
-        if event.type == IMAAdEventType.STARTED {
-            //Add the volume button only when ads is started
-            addVolumeButton()
+        if event.type == IMAAdEventType.RESUME {
+            NotificationCenter.post(name: .AdsContentView_restoreSize)
+            adsManager.resume()
         }
         
         insideAdCallbackDelegate?.insideAdCallbackReceived(data: EventTypeHandler.convertEventType(type: event.type))
