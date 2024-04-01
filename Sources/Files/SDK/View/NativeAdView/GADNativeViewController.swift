@@ -64,7 +64,7 @@ class GADNativeViewController: UIViewController {
             // Some native ads will include a video asset, while others do not. Apps can use the
             // GADVideoController's hasVideoContent property to determine if one is present, and adjust their
             // UI accordingly.
-            let mediaContent = InsideAdSdk.shared.campaignManager.adLoader!.nativeAd?.mediaContent
+            let mediaContent = InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.mediaContent
             if ((mediaContent?.hasVideoContent) != nil) {
                 // By acting as the delegate to the GADVideoController, this ViewController receives messages
                 // about events in the video lifecycle.
