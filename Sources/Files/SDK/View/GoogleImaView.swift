@@ -63,7 +63,7 @@ class InsideAdViewController: UIViewController, ObservableObject {
           button.layer.cornerRadius = 10
           button.layer.borderWidth = 1
           button.layer.borderColor = UIColor.white.cgColor
-         button.setImage(UIImage(systemName: Constants.ResellerInfo.isAdMuted ? Constants.SystemImage.speakerSlashFill : Constants.SystemImage.speakerFill), for: .normal)
+          button.setImage(UIImage(systemName: Constants.ResellerInfo.isAdMuted ? Constants.SystemImage.speakerSlashFill : Constants.SystemImage.speakerFill), for: .normal)
           button.addTarget(self, action: #selector(volumeButtonAction), for: .touchUpInside)
 
           self.view.addSubview(button)
@@ -142,6 +142,7 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
             // Start the timer to call the next ad interval
             NotificationCenter.post(name: .AdsContentView_startTimer)
             volumeButton?.removeFromSuperview()
+            InsideAdSdk.shared.campaignManager.vastRequested = false
             print(Logger.log("\(adErrorData.adError.message ?? "Unknown error")"))
         }
     }
@@ -177,6 +178,7 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
         // Something went wrong with the ads manager after ads were loaded. Log the error and play the
         // content.
         insideAdCallbackDelegate?.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: error.message ?? ""))
+        InsideAdSdk.shared.campaignManager.vastRequested = false
         print(Logger.log("\(error.message ?? "Unknown error")"))
     }
     
