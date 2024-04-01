@@ -151,7 +151,11 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
         if event.type == IMAAdEventType.LOADED {
             // When the SDK notifies us that ads have been loaded, play them.
             adsManager.start()
-            
+        }
+        
+        if event.type == IMAAdEventType.RESUME {
+            NotificationCenter.post(name: .AdsContentView_restoreSize)
+            adsManager.resume()
         }
         
         if event.type == IMAAdEventType.STARTED {
@@ -163,11 +167,6 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
             if !adsManager.adPlaybackInfo.isPlaying {
                 adsManager.resume()
             }
-        }
-        
-        if event.type == IMAAdEventType.RESUME {
-            NotificationCenter.post(name: .AdsContentView_restoreSize)
-            adsManager.resume()
         }
         
         insideAdCallbackDelegate?.insideAdCallbackReceived(data: EventTypeHandler.convertEventType(type: event.type))
