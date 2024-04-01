@@ -350,6 +350,7 @@ class CampaignManager: ObservableObject {
     var allPlacements = [Placement]()
     var geoIp: GeoIp?
     var vastRequested = false
+    var adLoaded = false
     
     private func getAllCampaigns() {
         if Constants.ResellerInfo.apiKey == "" {
@@ -382,6 +383,11 @@ class CampaignManager: ObservableObject {
                                                 self.adLoader = NativeAdLoaderViewModel(unitAd: unitId)
                                             }
                                             self.checkIfAdHasTagForReels()
+                                            //Update the shared campaign manager with the new data
+                                            InsideAdSdk.shared.campaignManager = self
+                                            //Inform the InsideAdsView to display the ad
+                                            NotificationCenter.post(name: .AdsContentView_start)
+                                            self.adLoaded = true
                                         } else {
                                             let errorMsg = Logger.log("Error while getting AD.")
                                             print(Logger.log(errorMsg))
