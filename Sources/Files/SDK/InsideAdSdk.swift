@@ -53,6 +53,7 @@ struct AdsContentView: View {
     @Environment(\.isPresented) var isPresented
     @ObservedObject var campaignManager: CampaignManager
     var insideAdCallback: Binding<InsideAdCallbackType>
+    var screen = ""
     
     @State var adViewId = UUID()
     @State var timerNextAd: Timer? = nil
@@ -62,6 +63,7 @@ struct AdsContentView: View {
         self.insideAdCallback = insideAdCallback
         Constants.ResellerInfo.isAdMuted = isAdMuted
         self.campaignManager = campaignManager
+        self.screen = screen
         InsideAdSdk.shared.activePlacement = self.campaignManager.allPlacements.getInsideAdByPlacement(screen: screen).1
         InsideAdSdk.shared.activeInsideAd = self.campaignManager.allPlacements.getInsideAdByPlacement(screen: screen).0
         InsideAdSdk.shared.activeCampaign = self.campaignManager.allCampaigns.findActiveCampaignFromActivePlacement( InsideAdSdk.shared.activePlacement?.id ?? "")
