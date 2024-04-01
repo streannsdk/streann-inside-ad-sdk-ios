@@ -133,5 +133,13 @@ struct AdsContentView: View {
                     }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_startAd), perform: { value in
+            InsideAdSdk.shared.activePlacement = InsideAdSdk.shared.campaignManager.allPlacements.getInsideAdByPlacement(screen: screen).1
+            InsideAdSdk.shared.activeInsideAd = InsideAdSdk.shared.campaignManager.allPlacements.getInsideAdByPlacement(screen: screen).0
+            InsideAdSdk.shared.activeCampaign = InsideAdSdk.shared.campaignManager.allCampaigns.findActiveCampaignFromActivePlacement( InsideAdSdk.shared.activePlacement?.id ?? "")
+            DispatchQueue.main.asyncAfter(deadline: InsideAdSdk.shared.activeInsideAd?.adType == .FULLSCREEN_NATIVE ? .now() + 2 : .now() + 0) {
+                campaignManagerFinishedLoading = true
+            }
+        })
     }
 }
