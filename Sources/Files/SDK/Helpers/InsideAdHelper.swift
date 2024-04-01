@@ -386,7 +386,7 @@ class CampaignManager: ObservableObject {
                                             //Update the shared campaign manager with the new data
                                             InsideAdSdk.shared.campaignManager = self
                                             //Inform the InsideAdsView to display the ad
-                                            NotificationCenter.post(name: .AdsContentView_start)
+                                            NotificationCenter.post(name: .AdsContentView_startAd)
                                             self.adLoaded = true
                                         } else {
                                             let errorMsg = Logger.log("Error while getting AD.")
