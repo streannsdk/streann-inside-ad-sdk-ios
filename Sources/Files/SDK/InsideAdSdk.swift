@@ -16,6 +16,7 @@ public class InsideAdSdk {
     public var hasAdForReels: Bool = false
     
     var vastController = InsideAdViewController()
+    var currentAdScreen = ""
     
     @State var bannerAdViewController = BannerAdViewController()
     var campaignManager = CampaignManager()
@@ -54,7 +55,8 @@ struct AdsContentView: View {
     @ObservedObject var campaignManager: CampaignManager
     var insideAdCallback: Binding<InsideAdCallbackType>
     var screen = ""
-    
+    // Set the current screen to check the startAfterSeconds delay
+    InsideAdSdk.shared.currentAdScreen = screen
     @State var adViewId = UUID()
     @State var timerNextAd: Timer? = nil
     @State var campaignManagerFinishedLoading = false
