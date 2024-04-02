@@ -108,3 +108,17 @@ public enum InsideAdCallbackType: Equatable, CaseIterable {
         ]
     }
 }
+
+enum InsideAdScreenLocations: String{
+    case splash
+    case videoPlayer
+    case reels
+    
+    var rawValue : String {
+      switch self {
+      case .splash: return "Splash"
+      case .videoPlayer: return "Video Player"
+      case .reels: return "Reels"
+      }
+    }
+}
