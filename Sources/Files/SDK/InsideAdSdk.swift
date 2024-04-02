@@ -55,8 +55,7 @@ struct AdsContentView: View {
     @ObservedObject var campaignManager: CampaignManager
     var insideAdCallback: Binding<InsideAdCallbackType>
     var screen = ""
-    // Set the current screen to check the startAfterSeconds delay
-    InsideAdSdk.shared.currentAdScreen = screen
+
     @State var adViewId = UUID()
     @State var timerNextAd: Timer? = nil
     @State var campaignManagerFinishedLoading = false
@@ -66,6 +65,8 @@ struct AdsContentView: View {
         Constants.ResellerInfo.isAdMuted = isAdMuted
         self.campaignManager = campaignManager
         self.screen = screen
+        // Set the current screen to check the startAfterSeconds delay
+        InsideAdSdk.shared.currentAdScreen = screen
         InsideAdSdk.shared.activePlacement = self.campaignManager.allPlacements.getInsideAdByPlacement(screen: screen).1
         InsideAdSdk.shared.activeInsideAd = self.campaignManager.allPlacements.getInsideAdByPlacement(screen: screen).0
         InsideAdSdk.shared.activeCampaign = self.campaignManager.allCampaigns.findActiveCampaignFromActivePlacement( InsideAdSdk.shared.activePlacement?.id ?? "")
