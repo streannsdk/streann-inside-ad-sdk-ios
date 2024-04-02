@@ -81,13 +81,11 @@ extension BannerAdViewController: GADBannerViewDelegate, GADAdSizeDelegate {
     }
     
     func bannerViewDidReceiveAd(_ bannerView: GADBannerView) {
-        let startAfterSeconds:Double = InsideAdSdk.shared.activeInsideAd?.adType != .FULLSCREEN_NATIVE ? Double(InsideAdSdk.shared.activePlacement?.properties?.startAfterSeconds ?? 0) : 0
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + startAfterSeconds) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + InsideAdSdk.shared.campaignManager.startAfterSeconds) {
             self.insideAdCallbackDelegate?.insideAdCallbackReceived(data: EventTypeHandler.convertEventType(type: .LOADED))
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(InsideAdSdk.shared.activeInsideAd?.properties?.durationInSeconds ?? 10 + Int(startAfterSeconds))) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(InsideAdSdk.shared.activeInsideAd?.properties?.durationInSeconds ?? 10 + Int(InsideAdSdk.shared.campaignManager.startAfterSeconds))) {
             bannerView.removeFromSuperview()
             self.adRequestStatus = .adRequested
             self.insideAdCallbackDelegate?.insideAdCallbackReceived(data: EventTypeHandler.convertEventType(type: .ALL_ADS_COMPLETED))
