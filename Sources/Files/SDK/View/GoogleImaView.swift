@@ -102,9 +102,7 @@ class InsideAdViewController: UIViewController, ObservableObject {
                 contentPlayhead: self.contentPlayhead,
                 userContext: nil)
             
-            let startAfterSeconds:Double = InsideAdSdk.shared.activeInsideAd?.adType != .FULLSCREEN_NATIVE ? Double(InsideAdSdk.shared.activePlacement?.properties?.startAfterSeconds ?? 0) : 0
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + startAfterSeconds) {[weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + InsideAdSdk.shared.campaignManager.startAfterSeconds) {[weak self] in
                 self?.adsLoader.requestAds(with: request)
                 self?.adRequestStatus = (self?.adRequestStatus == .fallbackRequested) ? .adRequested : .fallbackRequested
             }
