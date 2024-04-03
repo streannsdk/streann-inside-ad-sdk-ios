@@ -80,6 +80,9 @@ class GADNativeViewController: UIViewController {
             // In order for the SDK to process touch events properly, user interaction should be disabled.
             self?.nativeAdView.callToActionView?.isUserInteractionEnabled = false
             self?.nativeAdView.callToActionView?.isHidden = InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.store == nil
+            if !(self?.nativeAdView.callToActionView?.isHidden ?? true) {
+                self?.nativeAdView.callToActionView?.heightAnchor.constraint(equalToConstant: 40).isActive = true
+            }  
             // self?.nativeAdView.callToActionView?.sizeToFit()
             
         }
