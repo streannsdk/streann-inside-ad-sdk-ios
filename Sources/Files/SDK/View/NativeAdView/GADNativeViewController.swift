@@ -81,6 +81,7 @@ class GADNativeViewController: UIViewController {
             self?.nativeAdView.callToActionView?.isUserInteractionEnabled = false
             self?.nativeAdView.callToActionView?.isHidden = InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.store == nil
             self?.nativeAdView.callToActionView?.sizeToFit()
+            self?.nativeAdView.setNeedsUpdateConstraints()
         }
     }
     
