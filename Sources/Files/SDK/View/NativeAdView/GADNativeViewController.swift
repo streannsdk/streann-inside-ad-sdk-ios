@@ -30,8 +30,8 @@ class GADNativeViewController: UIViewController {
         nativeAdView = view
         nativeAdView.frame = self.view.bounds
         self.view.addSubview(nativeAdView)
-        // nativeAdView.callToActionView?.isHidden = true
-        nativeAdView.callToActionView?.alpha = 0
+        nativeAdView.callToActionView?.isHidden = true
+
         DispatchQueue.main.async { [weak self] in
             // Populate the native ad view with the native ad assets.
             // The headline and mediaContent are guaranteed to be present in every native ad.
@@ -60,8 +60,7 @@ class GADNativeViewController: UIViewController {
             self?.nativeAdView.bodyView?.isHidden = InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.body == nil
             
             (self?.nativeAdView.callToActionView as? UIButton)?.setTitle(InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.callToAction, for: .normal)
-            // self?.nativeAdView.callToActionView?.isHidden = InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.callToAction == nil
-            self?.nativeAdView.callToActionView?.alpha = InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.callToAction == nil ? 0 : 1
+            self?.nativeAdView.callToActionView?.isHidden = InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.callToAction == nil
                                   
             (self?.nativeAdView.iconView as? UIImageView)?.image = InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.icon?.image
             self?.nativeAdView.iconView?.isHidden = InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.icon == nil
@@ -80,9 +79,9 @@ class GADNativeViewController: UIViewController {
             
             // In order for the SDK to process touch events properly, user interaction should be disabled.
             self?.nativeAdView.callToActionView?.isUserInteractionEnabled = false
-            // self?.nativeAdView.callToActionView?.isHidden = InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.store == nil
-            self?.nativeAdView.callToActionView?.alpha = InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.callToAction == nil ? 0 : 1
-            // self?.nativeAdView.callToActionView?.sizeToFit()
+            self?.nativeAdView.callToActionView?.isHidden = InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.store == nil
+            self?.nativeAdView.callToActionView?.sizeToFit()
+            self?.nativeAdView.setNeedsUpdateConstraints()
         }
     }
     
