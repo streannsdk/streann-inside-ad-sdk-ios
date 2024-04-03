@@ -245,7 +245,7 @@ extension Array where Array.Element == Placement{
             if filteredPlacements.count > 1 {
                 let adsByMultiplePlacements = filteredPlacements.flatMap { $0.ads ?? [] }.sortByWeignt()
                 //if all ads have the same weight, choose the first one, otherwise choose the one with the highest weight
-                activeInsideAd = adsByMultiplePlacements.compareWeight() ? adsByMultiplePlacements.first : adsByMultiplePlacements.randomElement()
+                activeInsideAd = adsByMultiplePlacements.allTheSameWeight() ? adsByMultiplePlacements.randomElement() : adsByMultiplePlacements.first
             }else{
                 activeInsideAd = filteredPlacements.first?.ads?.sortByWeignt().first
             }
@@ -268,7 +268,7 @@ extension Array where Array.Element == InsideAd{
         return self.sorted(by: { ($0.weight ?? -1000) > ($1.weight ?? -1000) })
     }
 
-    func compareWeight() -> Bool {
+    func allTheSameWeight() -> Bool {
         return self.allSatisfy { $0.weight == self.first?.weight }
     }
     
