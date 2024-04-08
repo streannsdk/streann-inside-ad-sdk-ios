@@ -45,8 +45,8 @@ public class InsideAdSdk {
     public init() { }
     
     @ViewBuilder
-    public func insideAdView(screen: String, insideAdCallback: Binding<InsideAdCallbackType>, isAdMuted: Bool = false) -> some View {
-        AdsContentView(screen: screen, insideAdCallback: insideAdCallback, isAdMuted: isAdMuted, campaignManager: campaignManager)
+    public func insideAdView(screen: String, insideAdCallback: Binding<InsideAdCallbackType>, isAdMuted: Bool = false, contentTargeting: TargetModel? = nil) -> some View {
+        AdsContentView(screen: screen, insideAdCallback: insideAdCallback, isAdMuted: isAdMuted, campaignManager: campaignManager, targetModel: contentTargeting)
     }
 }
     
@@ -55,21 +55,20 @@ struct AdsContentView: View {
     @ObservedObject var campaignManager: CampaignManager
     var insideAdCallback: Binding<InsideAdCallbackType>
     var screen = ""
+    var targetModel: TargetModel?
 
     @State var adViewId = UUID()
     @State var timerNextAd: Timer? = nil
     @State var campaignManagerFinishedLoading = false
     
-    public init(screen:String, insideAdCallback: Binding<InsideAdCallbackType>, isAdMuted: Bool, campaignManager: CampaignManager) {
+    public init(screen:String, insideAdCallback: Binding<InsideAdCallbackType>, isAdMuted: Bool, campaignManager: CampaignManager, targetModel: TargetModel?) {
         self.insideAdCallback = insideAdCallback
         Constants.ResellerInfo.isAdMuted = isAdMuted
         self.campaignManager = campaignManager
         self.screen = screen
+        self.targetModel = targetModel
         // Set the current screen to check the startAfterSeconds delay
         InsideAdSdk.shared.currentAdScreen = screen
-        InsideAdSdk.shared.activePlacement = self.campaignManager.allPlacements.getInsideAdByPlacement(screen: screen).1
-        InsideAdSdk.shared.activeInsideAd = self.campaignManager.allPlacements.getInsideAdByPlacement(screen: screen).0
-        InsideAdSdk.shared.activeCampaign = self.campaignManager.allCampaigns.findActiveCampaignFromActivePlacement( InsideAdSdk.shared.activePlacement?.id ?? "")
     }
     
     var body: some View {
@@ -139,9 +138,31 @@ struct AdsContentView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_startAd), perform: { value in
-            InsideAdSdk.shared.activePlacement = InsideAdSdk.shared.campaignManager.allPlacements.getInsideAdByPlacement(screen: screen).1
-            InsideAdSdk.shared.activeInsideAd = InsideAdSdk.shared.campaignManager.allPlacements.getInsideAdByPlacement(screen: screen).0
-            InsideAdSdk.shared.activeCampaign = InsideAdSdk.shared.campaignManager.allCampaigns.findActiveCampaignFromActivePlacement( InsideAdSdk.shared.activePlacement?.id ?? "")
+            
+            var campaigns = InsideAdSdk.shared.campaignManager.allActiveCampaigns
+            
+            //Filter the campaigns that have placement with tags that match the screen
+            campaigns = campaigns.filterCampaignsByPlacementTags(tags: screen)
+            
+            //Filter the campaigns that content id is in the target ids. If not found return the campaigns without targeting
+            campaigns = TargetManager.shared.filterCampaignsByContentTargeting(campaigns: campaigns, targetingObject: targetModel)
+            
+            //If there are multiple campaigns with same tags, randomly return a campaign using the “roulette wheel selection method”
+            if campaigns.count > 1 {
+                InsideAdSdk.shared.activeCampaign = TargetManager.shared.selectObjectWithWeight(objects: campaigns)
+            } else {
+                InsideAdSdk.shared.activeCampaign = campaigns.first
+            }
+            
+            //All placements from the activeCampaign
+            
+            
+            // Find active insideAd from placements save interval for rminutes
+            InsideAdSdk.shared.activeInsideAd = TargetManager.shared.activeAdFromPlacement()
+            
+            //Active placement that contains the activeInsideAd
+            InsideAdSdk.shared.activePlacement = TargetManager.shared.activeAdFromPlacement()
+            
             DispatchQueue.main.asyncAfter(deadline: InsideAdSdk.shared.activeInsideAd?.adType == .FULLSCREEN_NATIVE ? .now() + 2 : .now() + 0) {
                 campaignManagerFinishedLoading = true
             }
