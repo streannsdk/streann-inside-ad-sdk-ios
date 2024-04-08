@@ -69,7 +69,9 @@ public class InsideAdSdk {
             self.screen = screen
             // Set the current screen to check the startAfterSeconds delay
             InsideAdSdk.shared.currentAdScreen = screen
-            self.targetModel = targetModel
+            if let targetModel {
+                self.targetModel = targetModel
+            }
         }
         
         var body: some View {
