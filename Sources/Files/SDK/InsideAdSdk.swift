@@ -62,7 +62,7 @@ struct AdsContentView: View {
     @State var campaignManagerFinishedLoading = false
     
     public init(screen:String, insideAdCallback: Binding<InsideAdCallbackType>, isAdMuted: Bool, campaignManager: CampaignManager, targetModel: TargetModel?) {
-        self.insideAdCallback = insideAdCallback
+        self._insideAdCallback = insideAdCallback
         Constants.ResellerInfo.isAdMuted = isAdMuted
         self.campaignManager = campaignManager
         self.screen = screen
