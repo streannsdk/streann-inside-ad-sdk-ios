@@ -59,7 +59,7 @@ class GeoIpUrl: Codable {
     }
 }
 
-public class CampaignAppModel: Codable {
+public class CampaignAppModel: Codable, WeightedObjectProtocol {
     var id: String?
     var name: String?
     var startDate: Date?
@@ -90,7 +90,7 @@ public class PlacementProperties: Codable {
     public var intervalForReels: Int?
 }
 
-public class InsideAd: Codable {
+public class InsideAd: Codable, WeightedObjectProtocol {
     var id: String?
     var name: String?
     var description: String?
@@ -206,17 +206,20 @@ extension CampaignAppModel: Comparable {
 }
 
 extension Array where Array.Element == CampaignAppModel{
-    
-    func sortActiveCampaign() -> [CampaignAppModel]?{
-        var activeCampaigns = self.filterCampaignsByDate()
-        activeCampaigns = activeCampaigns.filterCampaignsByTimePeriod() ?? activeCampaigns
-        activeCampaigns = activeCampaigns.sortByWeignt()
-        return activeCampaigns
+    //check if multiple campaigns containing the same tags in their placements
+    func checkIfMultipleCampaignsContainSameTags() -> Bool{
+        var tags = [String]()
+        for campaign in self{
+            for placement in campaign.placements ?? []{
+                tags.append(contentsOf: placement.tags ?? [])
+            }
+        }
+        let uniqueTags = Set(tags)
+        return tags.count != uniqueTags.count
     }
     
-    func filterCampaignsByDate(currentDate:Date = Date()) -> [CampaignAppModel]{
-        let campaigns = self.filter { $0.startDate != nil && $0.endDate != nil }
-        let activeCampaigns = campaigns.filter { $0.startDate! <= currentDate && $0.endDate! >= currentDate }
+    func sortActiveCampaign() -> [CampaignAppModel]?{
+        var activeCampaigns = self.filterCampaignsByTimePeriod() ?? self
         return activeCampaigns
     }
     
@@ -231,6 +234,18 @@ extension Array where Array.Element == CampaignAppModel{
     
     func findActiveCampaignFromActivePlacement(_ id: String ) -> CampaignAppModel? {
         return self.first { $0.placements?.contains(where: { $0.id == id }) ?? false }
+    }
+    
+    //Filter campaigns by placement tags
+    func filterCampaignsByPlacementTags(tags: String) -> [CampaignAppModel] {
+        return self.filter { $0.placements?.contains(where: { $0.tags?.contains(where: { tags.contains($0) }) ?? false }) ?? false }
+    }
+    
+//    Divide the filtered campaigns by tags in campaigns with targeting Lists and Campaigns without Targeting Lists
+    func divideCampaignsByTargeting() -> (withTargeting: [CampaignAppModel], withoutTargeting: [CampaignAppModel]) {
+        let withTargeting = self.filter { $0.targeting?.count ?? 0 > 0 }
+        let withoutTargeting = self.filter { $0.targeting?.count ?? 0 == 0 }
+        return (withTargeting, withoutTargeting)
     }
 }
 
@@ -279,6 +294,8 @@ extension Array where Array.Element == Placement{
             if let adId = activeInsideAd?.id{
                 activePlacement = filteredPlacements.findBy(adId: adId)
             }
+        } else {
+            print("No active placement found for screen: \(screen)")
         }
         
         return (activeInsideAd, activePlacement)
