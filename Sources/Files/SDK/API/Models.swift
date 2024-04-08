@@ -184,6 +184,15 @@ public struct TargetModel {
     public var seriesId: String?
     public var contentProviderId: String?
     public var categoryIds: [String]?
+
+    public init(vodId: String? = nil, channelId: String? = nil, radioId: String? = nil, seriesId: String? = nil, contentProviderId: String? = nil, categoryIds: [String]? = nil) {
+        self.vodId = vodId
+        self.channelId = channelId
+        self.radioId = radioId
+        self.seriesId = seriesId
+        self.contentProviderId = contentProviderId
+        self.categoryIds = categoryIds
+    }
 }
 
 extension CampaignAppModel: Comparable {
