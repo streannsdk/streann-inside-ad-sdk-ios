@@ -53,7 +53,7 @@ public class InsideAdSdk {
 struct AdsContentView: View {
     @Environment(\.isPresented) var isPresented
     @ObservedObject var campaignManager: CampaignManager
-    var insideAdCallback: Binding<InsideAdCallbackType>
+    @Binding var insideAdCallback: InsideAdCallbackType
     var screen = ""
     var targetModel: TargetModel?
 
