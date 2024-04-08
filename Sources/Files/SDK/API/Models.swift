@@ -71,6 +71,7 @@ public class CampaignAppModel: Codable {
     var timePeriods: [TimePeriod]?
     var placements: [Placement]?
     var properties: CampaignAppModelProperties?
+    var targeting: [Targeting]?
 }
 
 public class Placement: Codable {
@@ -100,6 +101,7 @@ public class InsideAd: Codable {
     var url: String?
     var properties: AdProperties?
     var fallback: Fallback?
+    var contentTargeting: [Targeting]?
 }
 
 class Fallback: Codable {
@@ -112,6 +114,21 @@ class Fallback: Codable {
     var fallbackID: String?
     var url: String?
     var properties: AdProperties?
+}
+
+class Targeting: Codable {
+    let id: String?
+    let version: Int?
+    let createdOn: Date?
+    let modifiedOn: Date?
+    let name: String?
+    let resellerId: String?
+    let targets: [Target]?
+}
+
+class Target: Codable {
+    let ids: [String]?
+    let type: String?
 }
 
 class CampaignAppModelProperties: Codable {
@@ -158,6 +175,15 @@ class TimePeriod: Codable {
     var startTime: Date? //00:00:00
     var endTime: Date? //23:30:45
     var daysOfWeek: [String]? //MONDAY, WEDNESDAY
+}
+
+public struct TargetModel {
+    var vodId: String?
+    var channelId: String?
+    var radioId: String?
+    var seriesId: String?
+    var contentProviderId: String?
+    var categoryIds: [String]?
 }
 
 extension CampaignAppModel: Comparable {
