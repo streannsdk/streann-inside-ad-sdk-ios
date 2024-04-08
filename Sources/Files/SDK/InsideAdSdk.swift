@@ -52,23 +52,26 @@ public class InsideAdSdk {
     
 struct AdsContentView: View {
     @Environment(\.isPresented) var isPresented
+    
     @ObservedObject var campaignManager: CampaignManager
-    @Binding var insideAdCallback: InsideAdCallbackType
-    var screen = ""
-    var targetModel: TargetModel?
-
+    
     @State var adViewId = UUID()
     @State var timerNextAd: Timer? = nil
     @State var campaignManagerFinishedLoading = false
+
+    @Binding var insideAdCallback: InsideAdCallbackType
     
-    public init(screen:String, insideAdCallback: Binding<InsideAdCallbackType>, isAdMuted: Bool, campaignManager: CampaignManager, targetModel: TargetModel?) {
+    var screen = ""
+    var targetModel: TargetModel?
+    
+    init(screen:String, insideAdCallback: Binding<InsideAdCallbackType>, isAdMuted: Bool, campaignManager: CampaignManager, targetModel: TargetModel?) {
         self._insideAdCallback = insideAdCallback
         Constants.ResellerInfo.isAdMuted = isAdMuted
         self.campaignManager = campaignManager
         self.screen = screen
-        self.targetModel = targetModel
         // Set the current screen to check the startAfterSeconds delay
         InsideAdSdk.shared.currentAdScreen = screen
+        self.targetModel = targetModel
     }
     
     var body: some View {
@@ -128,11 +131,17 @@ struct AdsContentView: View {
                     .onChange(of: isPresented) { presented in
                         //Close the ad tasks when the view is dismissed
                         if !presented {
-                            InsideAdSdk.shared.campaignManager.vastRequested = false
-                            InsideAdSdk.shared.vastController = InsideAdViewController()
-                            InsideAdSdk.shared.localVideoPlayerManager.stop()
-                            campaignManager.adViewHeight = 0
-                            campaignManager.adViewWidth = 0
+                            switch InsideAdSdk.shared.activeInsideAd?.adType {
+                            case .VAST:
+                                InsideAdSdk.shared.campaignManager.vastRequested = false
+                                InsideAdSdk.shared.vastController = InsideAdViewController()
+                                
+                            case.LOCAL_VIDEO:
+                                InsideAdSdk.shared.localVideoPlayerManager.stop()
+                                InsideAdSdk.shared.localVideoPlayerManager.loadAsset()
+                                
+                            default: break
+                            }
                         }
                     }
             }
