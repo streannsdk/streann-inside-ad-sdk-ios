@@ -74,7 +74,7 @@ struct AdsContentView: View {
     var body: some View {
         ZStack {
             if campaignManagerFinishedLoading || InsideAdSdk.shared.campaignManager.adLoaded {
-                InsideAdView(insideAdCallback: insideAdCallback)
+                InsideAdView(insideAdCallback: $insideAdCallback)
                     .id(adViewId)
                     .frame(maxWidth: campaignManager.adViewWidth, maxHeight:  campaignManager.adViewHeight)
                     .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_setFullSize), perform: { _ in
