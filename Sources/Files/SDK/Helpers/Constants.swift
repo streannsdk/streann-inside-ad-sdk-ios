@@ -109,7 +109,7 @@ public enum InsideAdCallbackType: Equatable, CaseIterable {
     }
 }
 
-enum InsideAdScreenLocations: String{
+enum InsideAdScreenLocations: String {
     case splash
     case videoPlayer
     case reels

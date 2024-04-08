@@ -99,7 +99,9 @@ class LocalImageLoaderManager: ObservableObject {
                 }
             }
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + InsideAdSdk.shared.campaignManager.startAfterSeconds) {
+            let startAfterSeconds:Double = InsideAdSdk.shared.activeInsideAd?.adType != .FULLSCREEN_NATIVE ? Double(InsideAdSdk.shared.activePlacement?.properties?.startAfterSeconds ?? 0) : 0
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + startAfterSeconds) {
                 self?.image = UIImage(data: data)
                 NotificationCenter.post(name: .AdsContentView_setFullSize)
                 self?.insideAdCallback = .LOADED

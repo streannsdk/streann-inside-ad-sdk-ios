@@ -254,7 +254,7 @@ extension Array where Array.Element == TimePeriod{
     func filterByTime() -> [TimePeriod] {
         let periods = self.filter { $0.startTime != nil && $0.endTime != nil }
         let activePeriods = periods.filter {
-            $0.startTime!.secondsFromBeginningOfTheDay() <= Date().secondsFromBeginningOfTheDay() && 
+            $0.startTime!.secondsFromBeginningOfTheDay() <= Date().secondsFromBeginningOfTheDay() &&
             $0.endTime!.secondsFromBeginningOfTheDay() >= Date().secondsFromBeginningOfTheDay()
         }
         return activePeriods
@@ -301,7 +301,7 @@ extension Array where Array.Element == Placement{
         return (activeInsideAd, activePlacement)
     }
     
-    func findBy(adId: String) -> Placement?{
+    func findBy(adId: String) -> Placement? {
         self.filter { ($0.ads ?? []).findBy(adId: adId) != nil }.first
     }
 }
@@ -310,7 +310,7 @@ extension Array where Array.Element == InsideAd{
     func sortByWeignt() -> [InsideAd]{
         return self.sorted(by: { ($0.weight ?? -1000) > ($1.weight ?? -1000) })
     }
-
+    
     func allTheSameWeight() -> Bool {
         return self.allSatisfy { $0.weight == self.first?.weight }
     }

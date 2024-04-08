@@ -9,6 +9,10 @@ import UIKit
 import GoogleMobileAds
 
 class GADNativeViewController: UIViewController {
+    
+    /// The height constraint applied to the ad view, where necessary.
+    var heightConstraint: NSLayoutConstraint?
+    
     /// The native ad view that is being presented.
     var nativeAdView: GADNativeAdView!
     
@@ -22,6 +26,7 @@ class GADNativeViewController: UIViewController {
         else {
             print("Could not load nib file for adView")
             return
+            //      assert(false, "Could not load nib file for adView")
         }
         self.setAdView(adView)
     }
@@ -31,8 +36,26 @@ class GADNativeViewController: UIViewController {
         nativeAdView.frame = self.view.bounds
         self.view.addSubview(nativeAdView)
         nativeAdView.callToActionView?.isHidden = true
-
+        
+        nativeAdView.translatesAutoresizingMaskIntoConstraints = false
+        //
         DispatchQueue.main.async { [weak self] in
+            //        // Layout constraints for positioning the native ad view to stretch the entire width and height
+            //        // of the nativeAdPlaceholder.
+            let viewDictionary = ["_nativeAdView": self?.nativeAdView!]
+            self?.view.addConstraints(
+                NSLayoutConstraint.constraints(
+                    withVisualFormat: "H:|[_nativeAdView]|",
+                    options: NSLayoutConstraint.FormatOptions(rawValue: 0), metrics: nil, views: viewDictionary as [String : Any])
+            )
+            self?.view.addConstraints(
+                NSLayoutConstraint.constraints(
+                    withVisualFormat: "V:|[_nativeAdView]|",
+                    options: NSLayoutConstraint.FormatOptions(rawValue: 0), metrics: nil, views: viewDictionary as [String : Any])
+            )
+            
+            self?.heightConstraint?.isActive = false
+            
             // Populate the native ad view with the native ad assets.
             // The headline and mediaContent are guaranteed to be present in every native ad.
             (self?.nativeAdView.headlineView as? UILabel)?.text = InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.headline
@@ -41,7 +64,7 @@ class GADNativeViewController: UIViewController {
             // Some native ads will include a video asset, while others do not. Apps can use the
             // GADVideoController's hasVideoContent property to determine if one is present, and adjust their
             // UI accordingly.
-            let mediaContent = InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.mediaContent
+            let mediaContent = InsideAdSdk.shared.campaignManager.adLoader!.nativeAd?.mediaContent
             if ((mediaContent?.hasVideoContent) != nil) {
                 // By acting as the delegate to the GADVideoController, this ViewController receives messages
                 // about events in the video lifecycle.
@@ -49,6 +72,20 @@ class GADNativeViewController: UIViewController {
                 print("Ad contains a video asset.")
             } else {
                 print("Ad does not contain a video.")
+            }
+            
+            // This app us9es a fixed width for the GADMediaView and changes its height to match the aspect
+            // ratio of the media it displays.
+            if let mediaView = self?.nativeAdView.mediaView, InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.mediaContent.aspectRatio ?? 0 > 0 {
+                self?.heightConstraint = NSLayoutConstraint(
+                    item: mediaView,
+                    attribute: .height,
+                    relatedBy: .equal,
+                    toItem: mediaView,
+                    attribute: .width,
+                    multiplier: CGFloat(1 / (InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.mediaContent.aspectRatio ?? 0)),
+                    constant: 0)
+                self?.heightConstraint?.isActive = true
             }
             
             let color = InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.mediaContent.mainImage?.averageColor
@@ -61,7 +98,7 @@ class GADNativeViewController: UIViewController {
             
             (self?.nativeAdView.callToActionView as? UIButton)?.setTitle(InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.callToAction, for: .normal)
             self?.nativeAdView.callToActionView?.isHidden = InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.callToAction == nil
-                                  
+            
             (self?.nativeAdView.iconView as? UIImageView)?.image = InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.icon?.image
             self?.nativeAdView.iconView?.isHidden = InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.icon == nil
             
@@ -81,7 +118,7 @@ class GADNativeViewController: UIViewController {
             self?.nativeAdView.callToActionView?.isUserInteractionEnabled = false
             self?.nativeAdView.callToActionView?.isHidden = InsideAdSdk.shared.campaignManager.adLoader?.nativeAd?.store == nil
             self?.nativeAdView.callToActionView?.sizeToFit()
-            self?.nativeAdView.setNeedsUpdateConstraints()
+            
         }
     }
     

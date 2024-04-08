@@ -63,7 +63,7 @@ class InsideAdViewController: UIViewController, ObservableObject {
           button.layer.cornerRadius = 10
           button.layer.borderWidth = 1
           button.layer.borderColor = UIColor.white.cgColor
-          button.setImage(UIImage(systemName: Constants.ResellerInfo.isAdMuted ? Constants.SystemImage.speakerSlashFill : Constants.SystemImage.speakerFill), for: .normal)
+         button.setImage(UIImage(systemName: Constants.ResellerInfo.isAdMuted ? Constants.SystemImage.speakerSlashFill : Constants.SystemImage.speakerFill), for: .normal)
           button.addTarget(self, action: #selector(volumeButtonAction), for: .touchUpInside)
 
           self.view.addSubview(button)
@@ -102,7 +102,9 @@ class InsideAdViewController: UIViewController, ObservableObject {
                 contentPlayhead: self.contentPlayhead,
                 userContext: nil)
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + InsideAdSdk.shared.campaignManager.startAfterSeconds) {[weak self] in
+            let startAfterSeconds:Double = InsideAdSdk.shared.activeInsideAd?.adType != .FULLSCREEN_NATIVE ? Double(InsideAdSdk.shared.activePlacement?.properties?.startAfterSeconds ?? 0) : 0
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + startAfterSeconds) {[weak self] in
                 self?.adsLoader.requestAds(with: request)
                 self?.adRequestStatus = (self?.adRequestStatus == .fallbackRequested) ? .adRequested : .fallbackRequested
             }
@@ -140,7 +142,6 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
             // Start the timer to call the next ad interval
             NotificationCenter.post(name: .AdsContentView_startTimer)
             volumeButton?.removeFromSuperview()
-            InsideAdSdk.shared.campaignManager.vastRequested = false
             print(Logger.log("\(adErrorData.adError.message ?? "Unknown error")"))
         }
     }
@@ -150,11 +151,7 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
         if event.type == IMAAdEventType.LOADED {
             // When the SDK notifies us that ads have been loaded, play them.
             adsManager.start()
-        }
-        
-        if event.type == IMAAdEventType.RESUME {
-            NotificationCenter.post(name: .AdsContentView_restoreSize)
-            adsManager.resume()
+            
         }
         
         if event.type == IMAAdEventType.STARTED {
@@ -168,6 +165,11 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
             }
         }
         
+        if event.type == IMAAdEventType.RESUME {
+            NotificationCenter.post(name: .AdsContentView_restoreSize)
+            adsManager.resume()
+        }
+        
         insideAdCallbackDelegate?.insideAdCallbackReceived(data: EventTypeHandler.convertEventType(type: event.type))
         print(Logger.log(event.typeString))
     }
@@ -176,7 +178,6 @@ extension InsideAdViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
         // Something went wrong with the ads manager after ads were loaded. Log the error and play the
         // content.
         insideAdCallbackDelegate?.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: error.message ?? ""))
-        InsideAdSdk.shared.campaignManager.vastRequested = false
         print(Logger.log("\(error.message ?? "Unknown error")"))
     }
     

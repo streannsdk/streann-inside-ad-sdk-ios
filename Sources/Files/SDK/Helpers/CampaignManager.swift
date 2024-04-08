@@ -49,7 +49,6 @@ class CampaignManager: ObservableObject {
                                 SDKAPI.getCampaigns(countryCode: self.geoIp?.countryCode ?? "") { campaigns, error in
                                     DispatchQueue.main.async {
                                         if let campaigns {
-//                                            self.allCampaigns = campaigns.sortActiveCampaign() ?? []
                                             self.allActiveCampaigns = campaigns.sortActiveCampaign() ?? []
                                             
                                             if let unitId = self.allPlacements.flatMap({ $0.ads ?? []  }).first(where: { $0.adType == .FULLSCREEN_NATIVE })?.url {
