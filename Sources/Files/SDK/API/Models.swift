@@ -178,12 +178,12 @@ class TimePeriod: Codable {
 }
 
 public struct TargetModel {
-    var vodId: String?
-    var channelId: String?
-    var radioId: String?
-    var seriesId: String?
-    var contentProviderId: String?
-    var categoryIds: [String]?
+    public var vodId: String?
+    public var channelId: String?
+    public var radioId: String?
+    public var seriesId: String?
+    public var contentProviderId: String?
+    public var categoryIds: [String]?
 }
 
 extension CampaignAppModel: Comparable {
