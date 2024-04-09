@@ -73,29 +73,7 @@ public class InsideAdSdk {
                 self.targetModel = targetModel
             }
 
-            var campaigns = InsideAdSdk.shared.campaignManager.allActiveCampaigns
-            
-            //Filter the campaigns that have placement with tags that match the screen
-            campaigns = campaigns.filterCampaignsByPlacementTags(tags: screen)
-            
-            //Filter the campaigns that content id is in the target ids. If not found return the campaigns without targeting
-            campaigns = TargetManager.shared.filterCampaignsByContentTargeting(campaigns: campaigns, targetingObject: targetModel)
-            
-            //If there are multiple campaigns with same tags, randomly return a campaign using the “roulette wheel selection method”
-            if campaigns.count > 1 {
-                InsideAdSdk.shared.activeCampaign = TargetManager.shared.selectObjectWithWeight(objects: campaigns)
-            } else {
-                InsideAdSdk.shared.activeCampaign = campaigns.first
-            }
-            
-            //All placements from the activeCampaign
-            
-            
-            // Find active insideAd from placements save interval for rminutes
-            InsideAdSdk.shared.activeInsideAd = TargetManager.shared.activeAdFromPlacement()
-            
-            //Active placement that contains the activeInsideAd
-            InsideAdSdk.shared.activePlacement = TargetManager.shared.activeAdFromPlacement()
+             TargetManager.shared.filterCampaigns(screen: screen, targetModel: targetModel)
         }
         
         var body: some View {
@@ -171,30 +149,7 @@ public class InsideAdSdk {
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_startAd), perform: { value in
-                
-                var campaigns = InsideAdSdk.shared.campaignManager.allActiveCampaigns
-                
-                //Filter the campaigns that have placement with tags that match the screen
-                campaigns = campaigns.filterCampaignsByPlacementTags(tags: screen)
-                
-                //Filter the campaigns that content id is in the target ids. If not found return the campaigns without targeting
-                campaigns = TargetManager.shared.filterCampaignsByContentTargeting(campaigns: campaigns, targetingObject: targetModel)
-                
-                //If there are multiple campaigns with same tags, randomly return a campaign using the “roulette wheel selection method”
-                if campaigns.count > 1 {
-                    InsideAdSdk.shared.activeCampaign = TargetManager.shared.selectObjectWithWeight(objects: campaigns)
-                } else {
-                    InsideAdSdk.shared.activeCampaign = campaigns.first
-                }
-                
-                //All placements from the activeCampaign
-                
-                
-                // Find active insideAd from placements save interval for rminutes
-                InsideAdSdk.shared.activeInsideAd = TargetManager.shared.activeAdFromPlacement()
-                
-                //Active placement that contains the activeInsideAd
-                InsideAdSdk.shared.activePlacement = TargetManager.shared.activeAdFromPlacement()
+                TargetManager.shared.filterCampaigns(screen: screen, targetModel: targetModel)
                 
                 DispatchQueue.main.asyncAfter(deadline: InsideAdSdk.shared.activeInsideAd?.adType == .FULLSCREEN_NATIVE ? .now() + 2 : .now() + 0) {
                     campaignManagerFinishedLoading = true
