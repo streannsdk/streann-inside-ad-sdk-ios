@@ -59,6 +59,7 @@ public struct InsideAdView: View, InsideAdCallbackDelegate {
                     NotificationCenter.post(name: .AdsContentView_setZeroSize)
                     NotificationCenter.post(name: .AdsContentView_startTimer)
                     InsideAdSdk.shared.campaignManager.vastRequested = false
+                    InsideAdSdk.shared.campaignManager.adLoaded = true
                }
                               
                if case let .IMAAdError(string) = insideAdCallback {
@@ -67,6 +68,9 @@ public struct InsideAdView: View, InsideAdCallbackDelegate {
                     }
                }
           })
+          .task {
+            InsideAdSdk.shared.campaignManager.adLoaded = false
+          }
      }
 }
 
