@@ -211,6 +211,5 @@ struct VastViewWrapper: UIViewRepresentable, InsideAdCallbackDelegate {
     
     func insideAdCallbackReceived(data: InsideAdCallbackType) {
         insideAdCallback = data
-        print("delegateState \(data)")
     }
 }

@@ -23,11 +23,7 @@ class InsideAdHelper {
         getUserAgent()
     }
     
-    // MARK: - Populate VAST URL
-    //aer serv documentaiton - https://support.aerserv.com/hc/en-us/articles/202407154-VAST-Tag-Integration-Guide-aerVideo-Ad-Unit-#VASTTagIntegrationGuide-MacroDefinitions
-    //req: appname, siteurl, bundleid, appdomain, cb, dnt, oid OR adid, ip, make, model, os, osv, ua
-    //not req: appversion, network, lat, long, locationsource, type, carrier, dw, dh
-    
+    // MARK: - Populate VAST URL    
     func populateVastFrom(adUrl: String,
                           geoModel: GeoIp,
                           playerSize: CGSize) -> String {

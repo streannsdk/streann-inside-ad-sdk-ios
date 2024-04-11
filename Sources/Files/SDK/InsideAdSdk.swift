@@ -14,11 +14,12 @@ public class InsideAdSdk {
     public var activeInsideAd: InsideAd?
     public var activeCampaign: CampaignAppModel?
     public var hasAdForReels: Bool = false
+    
     var vastController = InsideAdViewController()
+    var campaignManager = CampaignManager()
     var currentAdScreen = ""
     
     @State var bannerAdViewController = BannerAdViewController()
-    var campaignManager = CampaignManager()
     @State var imageLoader = LocalImageLoaderManager()
     @State var localVideoPlayerManager = LocalVideoPlayerManager()
     
@@ -62,18 +63,19 @@ public class InsideAdSdk {
         var screen = ""
         var targetModel: TargetModel?
         
-        init(screen:String, insideAdCallback: Binding<InsideAdCallbackType>, isAdMuted: Bool, campaignManager: CampaignManager, targetModel: TargetModel?) {
+        public init(screen:String, insideAdCallback: Binding<InsideAdCallbackType>, isAdMuted: Bool, campaignManager: CampaignManager, targetModel: TargetModel?) {
             self._insideAdCallback = insideAdCallback
             Constants.ResellerInfo.isAdMuted = isAdMuted
             self.campaignManager = campaignManager
             self.screen = screen
+            self.targetModel = targetModel
+            
             // Set the current screen to check the startAfterSeconds delay
             InsideAdSdk.shared.currentAdScreen = screen
-            if let targetModel {
-                self.targetModel = targetModel
-            }
-
-             TargetManager.shared.filterCampaigns(screen: screen, targetModel: targetModel)
+            
+            InsideAdSdk.shared.activeCampaign = self.campaignManager.allActiveCampaigns.findActiveCampaignFromScreenAndTargetModel(screen: screen, targetModel: targetModel)
+            InsideAdSdk.shared.activeInsideAd = self.campaignManager.allPlacements.activeAdFromPlacement()
+            InsideAdSdk.shared.activePlacement = TargetManager.shared.activePlacement()
         }
         
         var body: some View {
@@ -119,10 +121,17 @@ public class InsideAdSdk {
                                     case.LOCAL_VIDEO:
                                         InsideAdSdk.shared.localVideoPlayerManager.loadAsset()
                                         
-                                    default: break
+                                    case .LOCAL_IMAGE:
+                                        InsideAdSdk.shared.imageLoader.image = nil
+                                        
+                                    case .BANNER:
+                                        InsideAdSdk.shared.bannerAdViewController = BannerAdViewController()
+                                        
+                                    default:
+                                        break
                                     }
                                 }
-                            } else {
+                            }else{
                                 print(Logger.log("Timer not started - intervalInMinutes \(intervalInMinutes ?? 0)"))
                             }
                         })
@@ -140,7 +149,12 @@ public class InsideAdSdk {
                                     
                                 case.LOCAL_VIDEO:
                                     InsideAdSdk.shared.localVideoPlayerManager.stop()
-                                    InsideAdSdk.shared.localVideoPlayerManager.loadAsset()
+                                    
+                                case .LOCAL_IMAGE:
+                                    InsideAdSdk.shared.imageLoader.image = nil
+                                    
+                                case .BANNER:
+                                    InsideAdSdk.shared.bannerAdViewController = BannerAdViewController()
                                     
                                 default: break
                                 }
@@ -148,8 +162,11 @@ public class InsideAdSdk {
                         }
                 }
             }
+            //Listen for the start ad event to load the active campaign and active ad
             .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_startAd), perform: { value in
-                TargetManager.shared.filterCampaigns(screen: screen, targetModel: targetModel)
+                InsideAdSdk.shared.activeCampaign = self.campaignManager.allActiveCampaigns.findActiveCampaignFromScreenAndTargetModel(screen: screen, targetModel: targetModel)
+                InsideAdSdk.shared.activeInsideAd = self.campaignManager.allPlacements.activeAdFromPlacement()
+                InsideAdSdk.shared.activePlacement = TargetManager.shared.activePlacement()
                 
                 DispatchQueue.main.asyncAfter(deadline: InsideAdSdk.shared.activeInsideAd?.adType == .FULLSCREEN_NATIVE ? .now() + 2 : .now() + 0) {
                     campaignManagerFinishedLoading = true

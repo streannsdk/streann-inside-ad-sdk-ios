@@ -17,12 +17,10 @@ class CampaignManager: ObservableObject {
     @Published var adViewHeight: CGFloat = 0
     
     var adLoader: NativeAdLoaderViewModel?
-    var allCampaigns = [CampaignAppModel]()
     var allPlacements = [Placement]()
     var geoIp: GeoIp?
     var vastRequested = false
     var adLoaded = false
-    
     var allActiveCampaigns = [CampaignAppModel]()
 
     private func getAllCampaigns() {
@@ -50,6 +48,7 @@ class CampaignManager: ObservableObject {
                                     DispatchQueue.main.async {
                                         if let campaigns {
                                             self.allActiveCampaigns = campaigns.sortActiveCampaign() ?? []
+                                            self.allActiveCampaigns.forEach { self.allPlacements.append(contentsOf: $0.placements ?? []) }
                                             
                                             if let unitId = self.allPlacements.flatMap({ $0.ads ?? []  }).first(where: { $0.adType == .FULLSCREEN_NATIVE })?.url {
                                                 self.adLoader = NativeAdLoaderViewModel(unitAd: unitId)

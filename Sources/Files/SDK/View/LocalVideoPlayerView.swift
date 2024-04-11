@@ -102,7 +102,6 @@ class LocalVideoPlayerManager : ObservableObject {
             let asset = AVAsset(url: URL(string: InsideAdSdk.shared.activeInsideAd?.url ?? "")!)
             let playerItem = AVPlayerItem(asset: asset)
             player.replaceCurrentItem(with: playerItem)
-            //        player = AVPlayer(playerItem: playerItem)
             self.observer = playerItem.observe(\.status, options:  [.new, .old], changeHandler: { (playerItem, change) in
                 self.playerItemStatusChanged(playerItem.status)
             })
@@ -113,7 +112,6 @@ class LocalVideoPlayerManager : ObservableObject {
                 self?.player.play()
                 self?.playing = true
             }
-            
         }
     }
     
@@ -181,7 +179,6 @@ struct AVPlayerControllerWrapper : UIViewControllerRepresentable, InsideAdCallba
     }
     
     func updateUIViewController(_ uiViewController: AVPlayerViewController, context: UIViewControllerRepresentableContext<AVPlayerControllerWrapper>) {
-        
     }
     
     func insideAdCallbackReceived(data: InsideAdCallbackType) {

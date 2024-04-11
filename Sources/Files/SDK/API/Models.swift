@@ -184,7 +184,7 @@ public struct TargetModel {
     public var seriesId: String?
     public var contentProviderId: String?
     public var categoryIds: [String]?
-
+    
     public init(vodId: String? = nil, channelId: String? = nil, radioId: String? = nil, seriesId: String? = nil, contentProviderId: String? = nil, categoryIds: [String]? = nil) {
         self.vodId = vodId
         self.channelId = channelId
@@ -215,20 +215,9 @@ extension CampaignAppModel: Comparable {
 }
 
 extension Array where Array.Element == CampaignAppModel{
-    //check if multiple campaigns containing the same tags in their placements
-    func checkIfMultipleCampaignsContainSameTags() -> Bool{
-        var tags = [String]()
-        for campaign in self{
-            for placement in campaign.placements ?? []{
-                tags.append(contentsOf: placement.tags ?? [])
-            }
-        }
-        let uniqueTags = Set(tags)
-        return tags.count != uniqueTags.count
-    }
     
     func sortActiveCampaign() -> [CampaignAppModel]?{
-        var activeCampaigns = self.filterCampaignsByTimePeriod() ?? self
+        let activeCampaigns = self.filterCampaignsByTimePeriod() ?? self
         return activeCampaigns
     }
     
@@ -237,24 +226,20 @@ extension Array where Array.Element == CampaignAppModel{
         return activeCampaigns
     }
     
-    func sortByWeignt() -> [CampaignAppModel]{
-        return self.sorted(by: { ($0.weight ?? -1000) > ($1.weight ?? -1000) })
-    }
-    
-    func findActiveCampaignFromActivePlacement(_ id: String ) -> CampaignAppModel? {
-        return self.first { $0.placements?.contains(where: { $0.id == id }) ?? false }
+    func findActiveCampaignFromScreenAndTargetModel(screen: String, targetModel: TargetModel?) -> CampaignAppModel? {
+        var campaigns = InsideAdSdk.shared.campaignManager.allActiveCampaigns
+        campaigns = campaigns.filterCampaignsByPlacementTags(tags: screen)
+        campaigns = TargetManager.shared.filterCampaignsByContentTargeting(campaigns: campaigns, targetingObject: targetModel)
+        if campaigns.count > 1 {
+            return TargetManager.shared.selectObjectWithWeight(objects: campaigns)
+        } else {
+            return campaigns.first
+        }
     }
     
     //Filter campaigns by placement tags
     func filterCampaignsByPlacementTags(tags: String) -> [CampaignAppModel] {
         return self.filter { $0.placements?.contains(where: { $0.tags?.contains(where: { tags.contains($0) }) ?? false }) ?? false }
-    }
-    
-//    Divide the filtered campaigns by tags in campaigns with targeting Lists and Campaigns without Targeting Lists
-    func divideCampaignsByTargeting() -> (withTargeting: [CampaignAppModel], withoutTargeting: [CampaignAppModel]) {
-        let withTargeting = self.filter { $0.targeting?.count ?? 0 > 0 }
-        let withoutTargeting = self.filter { $0.targeting?.count ?? 0 == 0 }
-        return (withTargeting, withoutTargeting)
     }
 }
 
@@ -279,50 +264,24 @@ extension Array where Array.Element == TimePeriod{
 
 extension Array where Array.Element == Placement{
     
-    func getInsideAdByPlacement(screen: String) -> (InsideAd?, Placement?){
-        var activeInsideAd: InsideAd? = nil
-        var activePlacement: Placement? = nil
-        
-        let filteredPlacements = self.filter{
-            if screen.isEmpty {
-                $0.tags?.isEmpty ?? true
-            }else{
-                $0.tags?.contains(screen) ?? false
-            }
-        }
-        
-        if !filteredPlacements.isEmpty {
-            if filteredPlacements.count > 1 {
-                let adsByMultiplePlacements = filteredPlacements.flatMap { $0.ads ?? [] }.sortByWeignt()
-                //if all ads have the same weight, choose the first one, otherwise choose the one with the highest weight
-                activeInsideAd = adsByMultiplePlacements.allTheSameWeight() ? adsByMultiplePlacements.randomElement() : adsByMultiplePlacements.first
-            }else{
-                activeInsideAd = filteredPlacements.first?.ads?.sortByWeignt().first
-            }
-            
-            if let adId = activeInsideAd?.id{
-                activePlacement = filteredPlacements.findBy(adId: adId)
-            }
-        } else {
-            print("No active placement found for screen: \(screen)")
-        }
-        
-        return (activeInsideAd, activePlacement)
-    }
-    
     func findBy(adId: String) -> Placement? {
         self.filter { ($0.ads ?? []).findBy(adId: adId) != nil }.first
+    }
+    
+    func activeAdFromPlacement() -> InsideAd? {
+        var allAdsFromPlacement = [InsideAd]()
+        
+        //All placements from the activeCampaign
+        InsideAdSdk.shared.campaignManager.allActiveCampaigns.forEach { InsideAdSdk.shared.campaignManager.allPlacements.append(contentsOf: $0.placements ?? []) }
+        
+        // List of all ads in all placements that belong to the campaign that match the location.
+        InsideAdSdk.shared.activeCampaign?.placements?.forEach({ allAdsFromPlacement.append(contentsOf: $0.ads ?? []) })
+        
+        return TargetManager.shared.selectObjectWithWeight(objects: allAdsFromPlacement)
     }
 }
 
 extension Array where Array.Element == InsideAd{
-    func sortByWeignt() -> [InsideAd]{
-        return self.sorted(by: { ($0.weight ?? -1000) > ($1.weight ?? -1000) })
-    }
-    
-    func allTheSameWeight() -> Bool {
-        return self.allSatisfy { $0.weight == self.first?.weight }
-    }
     
     func findBy(adId: String) -> InsideAd?{
         return self.filter { $0.id == adId }.first
