@@ -78,8 +78,6 @@ public class InsideAdSdk {
                 InsideAdSdk.shared.activeCampaign = InsideAdSdk.shared.campaignManager.allActiveCampaigns.findActiveCampaignFromScreenAndTargetModel(screen: screen, targetModel: targetModel)
                 InsideAdSdk.shared.activeInsideAd = InsideAdSdk.shared.campaignManager.allPlacements.activeAdFromPlacement()
                 InsideAdSdk.shared.activePlacement = TargetManager.shared.activePlacement()
-                print("insideAdid \(InsideAdSdk.shared.activeInsideAd?.id)")
-                print("insideAdid activePlacement \(InsideAdSdk.shared.activePlacement?.id)")
             }
         }
         
