@@ -72,15 +72,20 @@ public class InsideAdSdk {
             
             // Set the current screen to check the startAfterSeconds delay
             InsideAdSdk.shared.currentAdScreen = screen
-            
-            InsideAdSdk.shared.activeCampaign = self.campaignManager.allActiveCampaigns.findActiveCampaignFromScreenAndTargetModel(screen: screen, targetModel: targetModel)
-            InsideAdSdk.shared.activeInsideAd = self.campaignManager.allPlacements.activeAdFromPlacement()
-            InsideAdSdk.shared.activePlacement = TargetManager.shared.activePlacement()
+
+            //If adLoaded is true, set the activeCampaign, activeInsideAd and activePlacement otherwise don't initialize them
+            if InsideAdSdk.shared.campaignManager.adLoaded {
+                InsideAdSdk.shared.activeCampaign = InsideAdSdk.shared.campaignManager.allActiveCampaigns.findActiveCampaignFromScreenAndTargetModel(screen: screen, targetModel: targetModel)
+                InsideAdSdk.shared.activeInsideAd = InsideAdSdk.shared.campaignManager.allPlacements.activeAdFromPlacement()
+                InsideAdSdk.shared.activePlacement = TargetManager.shared.activePlacement()
+                print("insideAdid \(InsideAdSdk.shared.activeInsideAd?.id)")
+                print("insideAdid activePlacement \(InsideAdSdk.shared.activePlacement?.id)")
+            }
         }
         
         var body: some View {
             ZStack {
-                if campaignManagerFinishedLoading || InsideAdSdk.shared.campaignManager.adLoaded {
+                //if campaignManagerFinishedLoading || InsideAdSdk.shared.campaignManager.adLoaded {
                     InsideAdView(insideAdCallback: $insideAdCallback)
                         .id(adViewId)
                         .frame(maxWidth: campaignManager.adViewWidth, maxHeight:  campaignManager.adViewHeight)
@@ -142,30 +147,32 @@ public class InsideAdSdk {
                         .onChange(of: isPresented) { presented in
                             //Close the ad tasks when the view is dismissed
                             if !presented {
+                                insideAdCallback = .ALL_ADS_COMPLETED
+                                
                                 switch InsideAdSdk.shared.activeInsideAd?.adType {
-                                case .VAST:
-                                    InsideAdSdk.shared.campaignManager.vastRequested = false
-                                    InsideAdSdk.shared.vastController = InsideAdViewController()
+                                    case .VAST:
+                                        InsideAdSdk.shared.campaignManager.vastRequested = false
+                                        InsideAdSdk.shared.vastController = InsideAdViewController()
                                     
-                                case.LOCAL_VIDEO:
-                                    InsideAdSdk.shared.localVideoPlayerManager.stop()
+                                    case.LOCAL_VIDEO:
+                                        InsideAdSdk.shared.localVideoPlayerManager.stop()
                                     
-                                case .LOCAL_IMAGE:
-                                    InsideAdSdk.shared.imageLoader.image = nil
+                                    case .LOCAL_IMAGE:
+                                        InsideAdSdk.shared.imageLoader.image = nil
                                     
-                                case .BANNER:
-                                    InsideAdSdk.shared.bannerAdViewController = BannerAdViewController()
+                                    case .BANNER:
+                                        InsideAdSdk.shared.bannerAdViewController = BannerAdViewController()
                                     
-                                default: break
+                                    default: break
                                 }
                             }
                         }
-                }
+                //}
             }
             //Listen for the start ad event to load the active campaign and active ad
             .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_startAd), perform: { value in
-                InsideAdSdk.shared.activeCampaign = self.campaignManager.allActiveCampaigns.findActiveCampaignFromScreenAndTargetModel(screen: screen, targetModel: targetModel)
-                InsideAdSdk.shared.activeInsideAd = self.campaignManager.allPlacements.activeAdFromPlacement()
+                InsideAdSdk.shared.activeCampaign = InsideAdSdk.shared.campaignManager.allActiveCampaigns.findActiveCampaignFromScreenAndTargetModel(screen: screen, targetModel: targetModel)
+                InsideAdSdk.shared.activeInsideAd = InsideAdSdk.shared.campaignManager.allPlacements.activeAdFromPlacement()
                 InsideAdSdk.shared.activePlacement = TargetManager.shared.activePlacement()
                 
                 DispatchQueue.main.asyncAfter(deadline: InsideAdSdk.shared.activeInsideAd?.adType == .FULLSCREEN_NATIVE ? .now() + 2 : .now() + 0) {
