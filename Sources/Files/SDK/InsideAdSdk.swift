@@ -38,7 +38,6 @@ public class InsideAdSdk {
         Constants.ResellerInfo.descriptionUrl = descriptionUrl ?? ""
         Constants.UserInfo.userBirthYear = userBirthYear
         Constants.UserInfo.userGender = userGender ?? .unknown
-        
         CampaignManager.shared.getAllCampaigns()
     }
     
@@ -52,11 +51,13 @@ public class InsideAdSdk {
     
 struct AdsContentView: View {
     @ObservedObject var campaignManager = CampaignManager.shared
+    
     @State private var orientation: UIDeviceOrientation = UIDevice.current.orientation
     @State var adViewId = UUID()
     @State var timerNextAd: Timer? = nil
-    @Binding var insideAdCallback: InsideAdCallbackType
     
+    @Binding var insideAdCallback: InsideAdCallbackType
+
     var screen = ""
     var targetModel: TargetModel?
     
@@ -149,7 +150,6 @@ struct AdsContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { orientation in
             campaignManager.isDeviceRotated = true
         }
-        
         .onDisappear{
             //If the device is rotated, don't reset the ad otherwise reset the ad
             if !campaignManager.isDeviceRotated {
@@ -159,7 +159,6 @@ struct AdsContentView: View {
                         InsideAdSdk.shared.vastController = InsideAdViewController()
 
                     case.LOCAL_VIDEO:
-                        InsideAdSdk.shared.localVideoPlayerManager.player.pause()
                         InsideAdSdk.shared.localVideoPlayerManager.player.replaceCurrentItem(with: nil)
                         InsideAdSdk.shared.localVideoPlayerManager.playing = false
                         InsideAdSdk.shared.localVideoPlayerManager = LocalVideoPlayerManager()
@@ -172,12 +171,10 @@ struct AdsContentView: View {
                         
                     default: break
                 }
-                
                 timerNextAd?.invalidate()
                 timerNextAd = nil
                 campaignManager.adViewHeight = 0
                 campaignManager.adViewWidth = 0
-                adViewId = UUID()
             } else {
                 campaignManager.isDeviceRotated = false
             }
@@ -185,5 +182,8 @@ struct AdsContentView: View {
         .onChange(of: campaignManager.adLoaded) { newValue in
             self.findActiveCampaignForScreen()
         }
+        .onAppear(perform: {
+            adViewId = UUID()
+        })
     }
 }
