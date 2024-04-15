@@ -17,8 +17,8 @@ struct LocalVideoPlayerView: View {
     }
     
     var body: some View {
-        if InsideAdSdk.shared.localVideoPlayerManager.player.currentItem?.status == .readyToPlay || insideAdCallback != .ALL_ADS_COMPLETED {
-            ZStack{
+        ZStack{
+            if InsideAdSdk.shared.localVideoPlayerManager.player.status == .readyToPlay || insideAdCallback != .STARTED {
                 AVPlayerControllerWrapper(insideAdCallback: $insideAdCallback)
                     .overlay(alignment: .top){
                         LinearGradient(colors: [.black.opacity(0.4), .clear],
@@ -89,16 +89,15 @@ extension LocalVideoPlayerView {
 }
 
 class LocalVideoPlayerManager : ObservableObject {
-    var player = AVPlayer()
-    
     @Published var playing = false
-    var insideAdCallbackDelegate: InsideAdCallbackDelegate?
     
+    var player = AVPlayer()
+    var insideAdCallbackDelegate: InsideAdCallbackDelegate?
     var observer: NSKeyValueObservation? = nil
     private var adRequestStatus: AdRequestStatus = .adRequested
     
     func loadAsset() {
-        if player.currentItem == nil { 
+        if player.currentItem == nil {
             let asset = AVAsset(url: URL(string: InsideAdSdk.shared.activeInsideAd?.url ?? "")!)
             let playerItem = AVPlayerItem(asset: asset)
             player.replaceCurrentItem(with: playerItem)
@@ -109,14 +108,14 @@ class LocalVideoPlayerManager : ObservableObject {
             let startAfterSeconds:Double = InsideAdSdk.shared.activeInsideAd?.adType != .FULLSCREEN_NATIVE ? Double(InsideAdSdk.shared.activePlacement?.properties?.startAfterSeconds ?? 0) : 0
             
             DispatchQueue.main.asyncAfter(deadline: .now() + startAfterSeconds) {[weak self] in
-                self?.player.play()
-                self?.playing = true
+                self?.play()
             }
         }
     }
     
     func play() {
         player.play()
+        playing = true
     }
     
     func stop() {
@@ -172,7 +171,7 @@ struct AVPlayerControllerWrapper : UIViewControllerRepresentable, InsideAdCallba
         let controller = AVPlayerViewController()
         controller.player =  InsideAdSdk.shared.localVideoPlayerManager.player
         controller.showsPlaybackControls = false
-        InsideAdSdk.shared.localVideoPlayerManager.loadAsset()
+//        InsideAdSdk.shared.localVideoPlayerManager.loadAsset()
         InsideAdSdk.shared.localVideoPlayerManager.insideAdCallbackDelegate = self
         return controller
     }
