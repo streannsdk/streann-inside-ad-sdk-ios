@@ -32,7 +32,13 @@ public struct InsideAdView: View, InsideAdCallbackDelegate {
                       LocalImageView(insideAdCallback: $insideAdCallback)
                       
                  case .LOCAL_VIDEO:
-                      LocalVideoPlayerView(insideAdCallback: $insideAdCallback)
+                     LocalVideoPlayerView(insideAdCallback: $insideAdCallback)
+                          .task {
+                               if !CampaignManager.shared.vastRequested {
+                                    InsideAdSdk.shared.localVideoPlayerManager.loadAsset()
+                                    CampaignManager.shared.vastRequested = true
+                               }
+                          }
                       
                  case .BANNER:
                       BannerAdViewWrapper(insideAdCallback: self)
