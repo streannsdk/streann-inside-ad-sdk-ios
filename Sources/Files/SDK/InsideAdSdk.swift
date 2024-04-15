@@ -153,29 +153,31 @@ struct AdsContentView: View {
         .onDisappear{
             //If the device is rotated, don't reset the ad otherwise reset the ad
             if !campaignManager.isDeviceRotated {
+                switch InsideAdSdk.shared.activeInsideAd?.adType {
+                    case .VAST:
+                        campaignManager.vastRequested = false
+                        InsideAdSdk.shared.vastController = InsideAdViewController()
+
+                    case.LOCAL_VIDEO:
+                        InsideAdSdk.shared.localVideoPlayerManager.player.pause()
+                        InsideAdSdk.shared.localVideoPlayerManager.player.replaceCurrentItem(with: nil)
+                        InsideAdSdk.shared.localVideoPlayerManager.playing = false
+                        InsideAdSdk.shared.localVideoPlayerManager = LocalVideoPlayerManager()
+
+                    case .LOCAL_IMAGE:
+                        InsideAdSdk.shared.imageLoader.image = nil
+                        
+                    case .BANNER:
+                        InsideAdSdk.shared.bannerAdViewController = BannerAdViewController()
+                        
+                    default: break
+                }
+                
                 timerNextAd?.invalidate()
                 timerNextAd = nil
                 campaignManager.adViewHeight = 0
                 campaignManager.adViewWidth = 0
-                
-                switch InsideAdSdk.shared.activeInsideAd?.adType {
-                case .VAST:
-                    campaignManager.vastRequested = false
-                    InsideAdSdk.shared.vastController = InsideAdViewController()
-                    
-                case.LOCAL_VIDEO:
-                    InsideAdSdk.shared.localVideoPlayerManager.player.pause()
-                    InsideAdSdk.shared.localVideoPlayerManager.player.replaceCurrentItem(with: nil)
-                    InsideAdSdk.shared.localVideoPlayerManager.playing = false
-                    
-                case .LOCAL_IMAGE:
-                    InsideAdSdk.shared.imageLoader.image = nil
-                    
-                case .BANNER:
-                    InsideAdSdk.shared.bannerAdViewController = BannerAdViewController()
-                    
-                default: break
-                }
+                adViewId = UUID()
             } else {
                 campaignManager.isDeviceRotated = false
             }
