@@ -46,6 +46,11 @@ class InsideAdViewController: UIViewController, ObservableObject {
             view.bringSubviewToFront(volumeButton)
         }
     }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        volumeButton?.removeFromSuperview()
+    }
     
     private func addImmadPlayerView(){
         let newView = UIView(frame: CGRect(x: 0, y: 0, width: view.frame.width, height: view.frame.height))
