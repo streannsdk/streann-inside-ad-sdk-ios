@@ -98,12 +98,12 @@ class LocalVideoPlayerManager : ObservableObject {
     private var adRequestStatus: AdRequestStatus = .adRequested
     
     func loadAsset() {
-        if player.currentItem == nil {
+        if player.currentItem == nil { 
             let asset = AVAsset(url: URL(string: InsideAdSdk.shared.activeInsideAd?.url ?? "")!)
             let playerItem = AVPlayerItem(asset: asset)
             player.replaceCurrentItem(with: playerItem)
-            self.observer = playerItem.observe(\.status, options:  [.new, .old], changeHandler: { (playerItem, change) in
-                self.playerItemStatusChanged(playerItem.status)
+            self.observer = playerItem.observe(\.status, options:  [.new, .old], changeHandler: { [weak self] (playerItem, change) in
+                self?.playerItemStatusChanged(playerItem.status)
             })
             
             let startAfterSeconds:Double = InsideAdSdk.shared.activeInsideAd?.adType != .FULLSCREEN_NATIVE ? Double(InsideAdSdk.shared.activePlacement?.properties?.startAfterSeconds ?? 0) : 0
@@ -131,9 +131,9 @@ class LocalVideoPlayerManager : ObservableObject {
             insideAdCallbackDelegate?.insideAdCallbackReceived(data: .STARTED)
             
             if let item = player.currentItem {
-                DispatchQueue.main.asyncAfter(deadline: .now() + CMTimeGetSeconds(item.duration)) {
-                    self.insideAdCallbackDelegate?.insideAdCallbackReceived(data: .ALL_ADS_COMPLETED)
-                    self.playing = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + CMTimeGetSeconds(item.duration)) { [weak self] in
+                    self?.insideAdCallbackDelegate?.insideAdCallbackReceived(data: .ALL_ADS_COMPLETED)
+                    self?.playing = false
                     InsideAdSdk.shared.localVideoPlayerManager.player.replaceCurrentItem(with: nil)
                 }
             }
@@ -159,8 +159,8 @@ class LocalVideoPlayerManager : ObservableObject {
         let asset = AVAsset(url: url)
         let playerItem = AVPlayerItem(asset: asset)
         player = AVPlayer(playerItem: playerItem)
-        self.observer = playerItem.observe(\.status, options:  [.new, .old], changeHandler: { (playerItem, change) in
-            self.playerItemStatusChanged(playerItem.status)
+        self.observer = playerItem.observe(\.status, options:  [.new, .old], changeHandler: { [weak self] (playerItem, change) in
+            self?.playerItemStatusChanged(playerItem.status)
         })
     }
 }
