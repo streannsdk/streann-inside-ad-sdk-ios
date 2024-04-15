@@ -9,21 +9,20 @@ import Foundation
 
 class CampaignManager: ObservableObject {
     
-    init() {
-        getAllCampaigns()
-    }
+    static let shared = CampaignManager()
     
     @Published var adViewWidth: CGFloat = 0
     @Published var adViewHeight: CGFloat = 0
+    @Published var adLoaded = false
     
     var adLoader: NativeAdLoaderViewModel?
     var allPlacements = [Placement]()
     var geoIp: GeoIp?
     var vastRequested = false
-    var adLoaded = false
     var allActiveCampaigns = [CampaignAppModel]()
-
-    private func getAllCampaigns() {
+    var isDeviceRotated =  false
+    
+    func getAllCampaigns() {
         if Constants.ResellerInfo.apiKey == "" {
             let errorMsg = "Api Key is required. Please implement the initializeSdk method."
             print(Logger.log(errorMsg))
@@ -55,12 +54,6 @@ class CampaignManager: ObservableObject {
                                             }
                                             self.checkIfAdHasTagForReels()
                                             
-                                            //Update the shared campaign manager with the new data
-                                            InsideAdSdk.shared.campaignManager = self
-                                            
-                                            //Inform the InsideAdsView to display the ad
-                                            NotificationCenter.post(name: .AdsContentView_startAd)
-
                                             self.adLoaded = true
                                         } else {
                                             let errorMsg = Logger.log("Error while getting AD.")

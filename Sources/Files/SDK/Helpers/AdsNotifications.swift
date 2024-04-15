@@ -15,7 +15,6 @@ extension NSNotification.Name {
     static let AdsContentView_restoreSize = Notification.Name("AdsContentView_restoreSize")
     static let AdsContentView_startAd = Notification.Name("AdsContentView_startAd")
     static let AdsContentView_startTimer = Notification.Name("AdsContentView_startTimer")
-    static let AdsContentView_stopTimer = Notification.Name("AdsContentView_stopTimer")
 }
 extension NotificationCenter{
     static func post(name: NSNotification.Name){

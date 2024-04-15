@@ -18,7 +18,7 @@ class TargetManager {
     func filterCampaignsByContentTargeting(campaigns: [CampaignAppModel], targetingObject: TargetModel?) -> [CampaignAppModel] {
 
         guard let targetingFilters = targetingObject else {
-            return campaigns// []
+            return campaigns
         }
 
         var activeCampaigns = [CampaignAppModel]()

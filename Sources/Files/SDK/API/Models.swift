@@ -227,7 +227,7 @@ extension Array where Array.Element == CampaignAppModel{
     }
     
     func findActiveCampaignFromScreenAndTargetModel(screen: String, targetModel: TargetModel?) -> CampaignAppModel? {
-        var campaigns = InsideAdSdk.shared.campaignManager.allActiveCampaigns
+        var campaigns = CampaignManager.shared.allActiveCampaigns
         campaigns = campaigns.filterCampaignsByPlacementTags(tags: screen)
         campaigns = TargetManager.shared.filterCampaignsByContentTargeting(campaigns: campaigns, targetingObject: targetModel)
         if campaigns.count > 1 {
@@ -272,7 +272,7 @@ extension Array where Array.Element == Placement{
         var allAdsFromPlacement = [InsideAd]()
         
         //All placements from the activeCampaign
-        InsideAdSdk.shared.campaignManager.allActiveCampaigns.forEach { InsideAdSdk.shared.campaignManager.allPlacements.append(contentsOf: $0.placements ?? []) }
+        CampaignManager.shared.allActiveCampaigns.forEach { CampaignManager.shared.allPlacements.append(contentsOf: $0.placements ?? []) }
         
         // List of all ads in all placements that belong to the campaign that match the location.
         InsideAdSdk.shared.activeCampaign?.placements?.forEach({ allAdsFromPlacement.append(contentsOf: $0.ads ?? []) })
@@ -282,7 +282,6 @@ extension Array where Array.Element == Placement{
 }
 
 extension Array where Array.Element == InsideAd{
-    
     func findBy(adId: String) -> InsideAd?{
         return self.filter { $0.id == adId }.first
     }

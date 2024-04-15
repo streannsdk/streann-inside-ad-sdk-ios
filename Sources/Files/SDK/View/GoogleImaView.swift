@@ -15,7 +15,7 @@ class InsideAdViewController: UIViewController, ObservableObject {
     private let adsLoader = IMAAdsLoader(settings: nil)
     private var adsManager: IMAAdsManager?
     private var volumeButton: UIButton?
-
+    
     private var insideAdHelper = InsideAdHelper()
     private var adRequestStatus: AdRequestStatus = .adRequested
     var imaadPlayerView: UIView?
@@ -39,7 +39,7 @@ class InsideAdViewController: UIViewController, ObservableObject {
     override func viewDidLoad() {
         super.viewDidLoad()
     }
-     
+    
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
         if let volumeButton = volumeButton{
@@ -47,47 +47,46 @@ class InsideAdViewController: UIViewController, ObservableObject {
         }
     }
     
-   private func addImmadPlayerView(){
-       let newView = UIView(frame: CGRect(x: 0, y: 0, width: view.frame.width, height: view.frame.height))
-       //Make the view's background color to clear do not be visible when incative
-       newView.backgroundColor = .clear
-       view.addSubview(newView)
-       imaadPlayerView = view
-   }
-
-     
-     private func addVolumeButton(){
-          let button = UIButton(frame: CGRect(x: 5, y: 5, width: 20, height: 20))
-          button.backgroundColor = .white
-          button.tintColor = .black
-          button.layer.cornerRadius = 10
-          button.layer.borderWidth = 1
-          button.layer.borderColor = UIColor.white.cgColor
-         button.setImage(UIImage(systemName: Constants.ResellerInfo.isAdMuted ? Constants.SystemImage.speakerSlashFill : Constants.SystemImage.speakerFill), for: .normal)
-          button.addTarget(self, action: #selector(volumeButtonAction), for: .touchUpInside)
-
-          self.view.addSubview(button)
-          view.bringSubviewToFront(button)
-          volumeButton = button
-     }
-
-     @objc private func volumeButtonAction(_ sender: UIButton) {
-          Constants.ResellerInfo.isAdMuted = !Constants.ResellerInfo.isAdMuted
-         print(Logger.log(" Volume changed to: \(adsManager?.volume ?? 0)"))
-          setImmadVolume()
-     }
-     
+    private func addImmadPlayerView(){
+        let newView = UIView(frame: CGRect(x: 0, y: 0, width: view.frame.width, height: view.frame.height))
+        //Make the view's background color to clear do not be visible when incative
+        newView.backgroundColor = .clear
+        view.addSubview(newView)
+        imaadPlayerView = view
+    }
+    
+    private func addVolumeButton(){
+        let button = UIButton(frame: CGRect(x: 5, y: 5, width: 20, height: 20))
+        button.backgroundColor = .white
+        button.tintColor = .black
+        button.layer.cornerRadius = 10
+        button.layer.borderWidth = 1
+        button.layer.borderColor = UIColor.white.cgColor
+        button.setImage(UIImage(systemName: Constants.ResellerInfo.isAdMuted ? Constants.SystemImage.speakerSlashFill : Constants.SystemImage.speakerFill), for: .normal)
+        button.addTarget(self, action: #selector(volumeButtonAction), for: .touchUpInside)
+        
+        self.view.addSubview(button)
+        view.bringSubviewToFront(button)
+        volumeButton = button
+    }
+    
+    @objc private func volumeButtonAction(_ sender: UIButton) {
+        Constants.ResellerInfo.isAdMuted = !Constants.ResellerInfo.isAdMuted
+        print(Logger.log(" Volume changed to: \(adsManager?.volume ?? 0)"))
+        setImmadVolume()
+    }
+    
     private func setImmadVolume(){
         adsManager?.volume = Constants.ResellerInfo.isAdMuted ? 0 : 1
         volumeButton?.setImage(UIImage(systemName: Constants.ResellerInfo.isAdMuted ? Constants.SystemImage.speakerSlashFill : Constants.SystemImage.speakerFill), for: .normal)
     }
-
+    
     // MARK: IMA integration methods
     func requestAds() {
         let activeInsideAd = InsideAdSdk.shared.activeInsideAd
         let url = adRequestStatus == .adRequested ? activeInsideAd?.url : activeInsideAd?.fallback?.url
-
-        if let url = url, let geoIp = InsideAdSdk.shared.campaignManager.geoIp {
+        
+        if let url = url, let geoIp = CampaignManager.shared.geoIp {
             //Populate macros
             let adTagUrl = self.insideAdHelper.populateVastFrom(adUrl: url, geoModel: geoIp, playerSize: self.viewSize)
             
@@ -211,5 +210,14 @@ struct VastViewWrapper: UIViewRepresentable, InsideAdCallbackDelegate {
     
     func insideAdCallbackReceived(data: InsideAdCallbackType) {
         insideAdCallback = data
+    }
+}
+
+struct VastView: View {
+    @Environment(\.isPresented) var isPresented
+    @Binding var insideAdCallback: InsideAdCallbackType
+
+    var body: some View {
+        VastViewWrapper(insideAdCallback: $insideAdCallback)
     }
 }

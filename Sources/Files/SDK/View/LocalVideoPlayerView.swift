@@ -135,7 +135,6 @@ class LocalVideoPlayerManager : ObservableObject {
                     self.insideAdCallbackDelegate?.insideAdCallbackReceived(data: .ALL_ADS_COMPLETED)
                     self.playing = false
                     InsideAdSdk.shared.localVideoPlayerManager.player.replaceCurrentItem(with: nil)
-                    NotificationCenter.post(name: .AdsContentView_startTimer)
                 }
             }
         } else if status == .failed {
