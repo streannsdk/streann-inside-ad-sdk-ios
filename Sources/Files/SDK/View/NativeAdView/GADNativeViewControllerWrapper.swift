@@ -16,6 +16,7 @@ struct GADNativeViewControllerWrapper : UIViewControllerRepresentable {
     
     func updateUIViewController(_ uiViewController: GADNativeViewController, context: Context) {
         if let nativeAd = CampaignManager.shared.adLoader?.nativeAd {
+            CampaignManager.shared.adLoader?.loadAd()
             uiViewController.displayLoadedAd(nativeAd: nativeAd)
         }
     }
