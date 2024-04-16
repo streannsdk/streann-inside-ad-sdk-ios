@@ -105,9 +105,7 @@ class LocalVideoPlayerManager : ObservableObject {
                 self?.playerItemStatusChanged(playerItem.status)
             })
             
-            let startAfterSeconds:Double = InsideAdSdk.shared.activeInsideAd?.adType != .FULLSCREEN_NATIVE ? Double(InsideAdSdk.shared.activePlacement?.properties?.startAfterSeconds ?? 0) : 0
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + startAfterSeconds) {[weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + CampaignManager.shared.startAfterSeconds) {[weak self] in
                 self?.play()
             }
         }

@@ -46,11 +46,6 @@ class InsideAdViewController: UIViewController, ObservableObject {
             view.bringSubviewToFront(volumeButton)
         }
     }
-
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        volumeButton?.removeFromSuperview()
-    }
     
     private func addImmadPlayerView(){
         let newView = UIView(frame: CGRect(x: 0, y: 0, width: view.frame.width, height: view.frame.height))
@@ -106,9 +101,7 @@ class InsideAdViewController: UIViewController, ObservableObject {
                 contentPlayhead: self.contentPlayhead,
                 userContext: nil)
             
-            let startAfterSeconds:Double = InsideAdSdk.shared.activeInsideAd?.adType != .FULLSCREEN_NATIVE ? Double(InsideAdSdk.shared.activePlacement?.properties?.startAfterSeconds ?? 0) : 0
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + startAfterSeconds) {[weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + CampaignManager.shared.startAfterSeconds) {[weak self] in
                 self?.adsLoader.requestAds(with: request)
                 self?.adRequestStatus = (self?.adRequestStatus == .fallbackRequested) ? .adRequested : .fallbackRequested
             }
