@@ -53,8 +53,10 @@ class CampaignManager: ObservableObject {
                                                 self.adLoader = NativeAdLoaderViewModel(unitAd: unitId)
                                             }
                                             self.checkIfAdHasTagForReels()
-                                            
-                                            self.adLoaded = true
+                                            // Delay for the native ad to load
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + self.delayLaunchForNativeAd) {
+                                                self.adLoaded = true
+                                            }
                                         } else {
                                             let errorMsg = Logger.log("Error while getting AD.")
                                             print(Logger.log(errorMsg))
@@ -83,4 +85,8 @@ extension CampaignManager {
                 return 0
             }
         }
+    
+    private var delayLaunchForNativeAd: Double {
+        return adLoader != nil ? 1.5 : 0
+    }
 }
