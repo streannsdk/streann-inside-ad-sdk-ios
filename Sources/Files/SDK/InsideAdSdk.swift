@@ -14,6 +14,7 @@ public class InsideAdSdk {
     public var activeInsideAd: InsideAd?
     public var activeCampaign: CampaignAppModel?
     public var hasAdForReels: Bool = false
+    public var intervalForReels: Int?
     
     var vastController = InsideAdViewController()
     var currentAdScreen = ""
