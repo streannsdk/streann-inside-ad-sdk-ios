@@ -48,62 +48,32 @@ struct Logger {
 }
 
 public enum InsideAdCallbackType: Equatable, CaseIterable {
-    case AD_BREAK_READY
-    case AD_BREAK_FETCH_ERROR
-    case AD_BREAK_ENDED
-    case AD_BREAK_STARTED
-    case AD_PERIOD_ENDED
-    case AD_PERIOD_STARTED
     case ALL_ADS_COMPLETED
     case CLICKED
     case COMPLETE
-    case CUEPOINTS_CHANGED
     case ICON_FALLBACK_IMAGE_CLOSED
     case ICON_TAPPED
-    case FIRST_QUARTILE
     case LOADED
-    case LOG
-    case MIDPOINT
     case PAUSE
     case RESUME
-    case SKIPPED
     case STARTED
-    case STREAM_LOADED
-    case STREAM_STARTED
     case TAPPED
-    case THIRD_QUARTILE
     case UNKNOWN
-    case STOP
     case IMAAdError(String)
     
     public static var allCases: [InsideAdCallbackType] {
         return [
-            .AD_BREAK_ENDED,
-            .AD_BREAK_FETCH_ERROR,
-            .AD_BREAK_ENDED,
-            .AD_BREAK_STARTED,
-            .AD_PERIOD_ENDED,
-            .AD_PERIOD_STARTED,
             .ALL_ADS_COMPLETED,
             .CLICKED,
             .COMPLETE,
-            .CUEPOINTS_CHANGED,
             .ICON_FALLBACK_IMAGE_CLOSED,
             .ICON_TAPPED,
-            .FIRST_QUARTILE,
             .LOADED,
-            .LOG,
-            .MIDPOINT,
             .PAUSE,
             .RESUME,
-            .SKIPPED,
             .STARTED,
-            .STREAM_LOADED,
-            .STREAM_STARTED,
             .TAPPED,
-            .THIRD_QUARTILE,
             .UNKNOWN,
-            .STOP,
             .IMAAdError("")
         ]
     }
@@ -121,4 +91,31 @@ enum InsideAdScreenLocations: String {
       case .reels: return "Reels"
       }
     }
+}
+
+enum ContentType: String {
+    case channel
+    case radio
+    case vod
+    case videoondemand
+    case audioondemand
+    case tvprogram
+    case news
+    case rss_vod
+    case campaign
+    case banner
+    case selfie_ads
+    case application
+    case category
+    case youtube_video
+    case youtube
+    case inside_news
+    case channel_category
+    case youtube_category
+    case inside_live_event
+    case inside_game
+    case inside_poll
+    case workbook
+    case triton
+    case unknown
 }
