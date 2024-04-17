@@ -90,7 +90,7 @@ extension CampaignManager {
     var startAfterSeconds: Double {
             if InsideAdSdk.shared.activeInsideAd?.adType != .FULLSCREEN_NATIVE &&
                 InsideAdSdk.shared.currentAdScreen != InsideAdScreenLocations.reels.rawValue {
-                return Double(InsideAdSdk.shared.activePlacement?.properties?.startAfterSeconds ?? 0)
+                return Double(InsideAdSdk.shared.activePlacement?.properties?.startAfterSeconds ?? 5)
             } else {
                 return 0
             }
