@@ -178,17 +178,15 @@ class TimePeriod: Codable {
 }
 
 public struct TargetModel {
-    public var vodId: String?
-    public var channelId: String?
-    public var radioId: String?
+    public var contentId: String?
+    public var contentType: String?
     public var seriesId: String?
     public var contentProviderId: String?
     public var categoryIds: [String]?
     
-    public init(vodId: String? = nil, channelId: String? = nil, radioId: String? = nil, seriesId: String? = nil, contentProviderId: String? = nil, categoryIds: [String]? = nil) {
-        self.vodId = vodId
-        self.channelId = channelId
-        self.radioId = radioId
+    public init(contentId: String? = nil, contentType: String?, seriesId: String? = nil, contentProviderId: String? = nil, categoryIds: [String]? = nil) {
+        self.contentId = contentId
+        self.contentType = contentType
         self.seriesId = seriesId
         self.contentProviderId = contentProviderId
         self.categoryIds = categoryIds
