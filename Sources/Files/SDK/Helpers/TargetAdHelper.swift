@@ -22,9 +22,9 @@ class TargetManager {
         }
 
         var activeCampaigns = [CampaignAppModel]()
-        let vodId = targetingFilters.vodId
-        let channelId = targetingFilters.channelId
-        let radioId = targetingFilters.radioId
+        let contentId = targetingFilters.contentId
+        let contentType = targetingFilters.contentType
+        
         let seriesId = targetingFilters.seriesId
         let categoryIds = targetingFilters.categoryIds
         let contentProviderId = targetingFilters.contentProviderId
@@ -35,35 +35,29 @@ class TargetManager {
                     return []
                 }
 
-                if let vodId = vodId, !vodId.isEmpty,
-                    targetsList.contains(where: { $0.type == "VOD" && $0.ids?.contains(vodId) ?? false }) {
-                    activeCampaigns.append(campaign)
-                    break
+                if let contentId = contentId, let contentType = contentType, !contentId.isEmpty, !contentType.isEmpty {
+                    //small letters in, big letters matching
+                    if contentType == ContentType.vod.rawValue && targetsList.contains(where: { $0.type == ContentType.vod.rawValue.uppercased() && $0.ids?.contains(contentId) ?? false }) {
+                        activeCampaigns.append(campaign)
+                        break
+                    }
+                    
+                    if contentType == ContentType.channel.rawValue && targetsList.contains(where: { $0.type == ContentType.channel.rawValue.uppercased() && $0.ids?.contains(contentId) ?? false }) {
+                        activeCampaigns.append(campaign)
+                        break
+                    }
+                    
+                    if contentType == ContentType.radio.rawValue && targetsList.contains(where: { $0.type == ContentType.radio.rawValue.uppercased() && $0.ids?.contains(contentId) ?? false }) {
+                        activeCampaigns.append(campaign)
+                        break
+                    }
                 }
-
-                if let channelId = channelId, !channelId.isEmpty,
-                    targetsList.contains(where: { $0.type == "CHANNEL" && $0.ids?.contains(channelId) ?? false }) {
-                    activeCampaigns.append(campaign)
-                    break
-                }
-
-                if let radioId = radioId, !radioId.isEmpty,
-                    targetsList.contains(where: { $0.type == "RADIO" && $0.ids?.contains(radioId) ?? false }) {
-                    activeCampaigns.append(campaign)
-                    break
-                }
-
+                
                 if let seriesId = seriesId, !seriesId.isEmpty,
                     targetsList.contains(where: { $0.type == "SERIES" && $0.ids?.contains(seriesId) ?? false }) {
                     activeCampaigns.append(campaign)
                     break
                 }
-
-//                if let categoryIds = categoryIds, !categoryIds.isEmpty,
-//                    targetsList.contains(where: { $0.type == "CATEGORY" && $0.ids?.contains(categoryIds) ?? false }) {
-//                    activeCampaigns.append(campaign)
-//                    break
-//                }
                 
                 if !(categoryIds?.isEmpty ?? false) && targetsList.contains(where: { target in
                     return target.type == "CATEGORY" && isCategoryIdContained(targetIds: target.ids ?? [], categoryIds: categoryIds ?? [])
