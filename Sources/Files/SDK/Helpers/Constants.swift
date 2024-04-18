@@ -97,25 +97,7 @@ enum ContentType: String {
     case channel
     case radio
     case vod
-    case videoondemand
-    case audioondemand
-    case tvprogram
-    case news
-    case rss_vod
-    case campaign
-    case banner
-    case selfie_ads
-    case application
     case category
-    case youtube_video
-    case youtube
-    case inside_news
-    case channel_category
-    case youtube_category
-    case inside_live_event
-    case inside_game
-    case inside_poll
-    case workbook
-    case triton
-    case unknown
+    case series
+    case contentProvider
 }
