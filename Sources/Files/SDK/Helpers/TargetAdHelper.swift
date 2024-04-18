@@ -54,13 +54,13 @@ class TargetManager {
                 }
                 
                 if let seriesId = seriesId, !seriesId.isEmpty,
-                    targetsList.contains(where: { $0.type == "SERIES" && $0.ids?.contains(seriesId) ?? false }) {
+                    targetsList.contains(where: { $0.type == ContentType.series.rawValue && $0.ids?.contains(seriesId) ?? false }) {
                     activeCampaigns.append(campaign)
                     break
                 }
                 
                 if !(categoryIds?.isEmpty ?? false) && targetsList.contains(where: { target in
-                    return target.type == "CATEGORY" && isCategoryIdContained(targetIds: target.ids ?? [], categoryIds: categoryIds ?? [])
+                    return target.type == ContentType.category.rawValue && isCategoryIdContained(targetIds: target.ids ?? [], categoryIds: categoryIds ?? [])
                 }) {
                     activeCampaigns.append(campaign)
                     break
