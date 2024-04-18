@@ -37,17 +37,17 @@ class TargetManager {
 
                 if let contentId = contentId, let contentType = contentType, !contentId.isEmpty, !contentType.isEmpty {
                     //small letters in, big letters matching
-                    if contentType == ContentType.vod.rawValue && targetsList.contains(where: { $0.type == ContentType.vod.rawValue.uppercased() && $0.ids?.contains(contentId) ?? false }) {
+                    if contentType == ContentType.vod.rawValue && targetsList.contains(where: { $0.type == ContentType.vod.rawValue && $0.ids?.contains(contentId) ?? false }) {
                         activeCampaigns.append(campaign)
                         break
                     }
                     
-                    if contentType == ContentType.channel.rawValue && targetsList.contains(where: { $0.type == ContentType.channel.rawValue.uppercased() && $0.ids?.contains(contentId) ?? false }) {
+                    if contentType == ContentType.channel.rawValue && targetsList.contains(where: { $0.type == ContentType.channel.rawValue && $0.ids?.contains(contentId) ?? false }) {
                         activeCampaigns.append(campaign)
                         break
                     }
                     
-                    if contentType == ContentType.radio.rawValue && targetsList.contains(where: { $0.type == ContentType.radio.rawValue.uppercased() && $0.ids?.contains(contentId) ?? false }) {
+                    if contentType == ContentType.radio.rawValue && targetsList.contains(where: { $0.type == ContentType.radio.rawValue && $0.ids?.contains(contentId) ?? false }) {
                         activeCampaigns.append(campaign)
                         break
                     }
