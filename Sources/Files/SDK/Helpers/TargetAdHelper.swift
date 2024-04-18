@@ -68,7 +68,7 @@ class TargetManager {
 
 
                 if let contentProviderId = contentProviderId, !contentProviderId.isEmpty,
-                    targetsList.contains(where: { $0.type == "CONTENT_PROVIDER" && $0.ids?.contains(contentProviderId) ?? false }) {
+                    targetsList.contains(where: { $0.type == ContentType.contentProvider.rawValue && $0.ids?.contains(contentProviderId) ?? false }) {
                     activeCampaigns.append(campaign)
                     break
                 }
