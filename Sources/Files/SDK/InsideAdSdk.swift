@@ -52,7 +52,7 @@ public class InsideAdSdk {
     
 struct AdsContentView: View {
     @ObservedObject var campaignManager = CampaignManager.shared
-    
+    @StateObject var viewModel = AdsContentViewModel()
     @State private var orientation: UIDeviceOrientation = UIDevice.current.orientation
     @State var adViewId = UUID()
     @State var timerNextAd: Timer? = nil
