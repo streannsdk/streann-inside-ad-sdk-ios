@@ -123,13 +123,13 @@ class TargetManager {
         var allAdsFromPlacement = [InsideAd]()
         
         // List of all ads in all placements that belong to the campaign that match the location.
-        InsideAdSdk.shared.activeCampaign?.placements?.forEach({ allAdsFromPlacement.append(contentsOf: $0.ads ?? []) })
+        CampaignManager.shared.activeCampaign?.placements?.forEach({ allAdsFromPlacement.append(contentsOf: $0.ads ?? []) })
         
         return selectObjectWithWeight(objects: allAdsFromPlacement)
     }
     
     func activePlacement() -> Placement? {
         // List of all ads in all placements that belong to the campaign that match the location.
-        return InsideAdSdk.shared.activeCampaign?.placements?.findBy(adId: InsideAdSdk.shared.activeInsideAd?.id ?? "")
+        return CampaignManager.shared.activeCampaign?.placements?.findBy(adId: CampaignManager.shared.activeInsideAd?.id ?? "")
     }
 }

@@ -9,26 +9,32 @@ import UIKit
 import SwiftUI
 import GoogleMobileAds
 
-struct BannerAdViewWrapper: UIViewRepresentable {
-    var insideAdCallback: InsideAdView
+struct BannerAdViewWrapper: UIViewRepresentable, InsideAdCallbackDelegate {
+    @Binding var insideAdCallback: InsideAdCallbackType
     
     func makeUIView(context: Context) -> UIView {
-        InsideAdSdk.shared.bannerAdViewController.insideAdCallbackDelegate = insideAdCallback
-        InsideAdSdk.shared.bannerAdViewController.setupBannerView()
-        InsideAdSdk.shared.bannerAdViewController.loadBannerAd()
-        return InsideAdSdk.shared.bannerAdViewController.bannerView
+        if AdsManager.shared.bannerAdViewController == nil {
+            AdsManager.shared.bannerAdViewController = BannerAdViewController()
+            AdsManager.shared.bannerAdViewController?.insideAdCallbackDelegate = self
+            AdsManager.shared.bannerAdViewController?.setupBannerView()
+        }
+
+        return AdsManager.shared.bannerAdViewController!.bannerView
     }
     
     func updateUIView(_ uiViewController: UIView, context: Context) {
         //
+    }
+    
+    func insideAdCallbackReceived(data: InsideAdCallbackType) {
+        insideAdCallback = data
+        print("delegateState \(data)")
     }
 }
 
 class BannerAdViewController: UIViewController, ObservableObject {
     var insideAdCallbackDelegate: InsideAdCallbackDelegate?
     var adSizes = [NSValue]()
-    private var adRequestStatus: AdRequestStatus = .adRequested
-    
     var bannerView: GAMBannerView = GAMBannerView(adSize: GADAdSizeBanner)
 
     override func viewDidLoad() {
@@ -36,17 +42,12 @@ class BannerAdViewController: UIViewController, ObservableObject {
     }
 
     func setupBannerView() {
-        switch adRequestStatus {
-            case .adRequested:
-                bannerView.adUnitID = InsideAdSdk.shared.activeInsideAd?.url
-            case .fallbackRequested:
-            bannerView.adUnitID = InsideAdSdk.shared.activeInsideAd?.fallback?.url
-        }
-
-        bannerView.rootViewController = InsideAdSdk.shared.bannerAdViewController
+        bannerView.adUnitID = CampaignManager.shared.activeInsideAd?.url
+        bannerView.rootViewController = AdsManager.shared.bannerAdViewController
         bannerView.delegate = self
         bannerView.adSizeDelegate = self
-        adRequestStatus = (adRequestStatus == .fallbackRequested) ? .adRequested : .fallbackRequested
+        
+        loadBannerAd()
     }
 
     func loadBannerAd() {
@@ -57,14 +58,13 @@ class BannerAdViewController: UIViewController, ObservableObject {
         addValidSizesToBannerView()
         bannerView.validAdSizes = adSizes
         
-        adRequestStatus = (adRequestStatus == .fallbackRequested) ? .adRequested : .fallbackRequested
         
         self.bannerView.load(GADRequest())
         self.view.addSubview(self.bannerView)
     }
 
     private func addValidSizesToBannerView() {
-        if let sizes = adRequestStatus == .adRequested ? InsideAdSdk.shared.activeInsideAd?.properties?.sizes :  InsideAdSdk.shared.activeInsideAd?.fallback?.properties?.sizes {
+        if let sizes = CampaignManager.shared.activeInsideAd?.properties?.sizes {
             for size in sizes {
                 let customSize = GADAdSizeFromCGSize(CGSize(width: size.width ?? 320, height: size.height ?? 50))
                 adSizes.append(NSValueFromGADAdSize(customSize))
@@ -81,26 +81,15 @@ extension BannerAdViewController: GADBannerViewDelegate, GADAdSizeDelegate {
     }
     
     func bannerViewDidReceiveAd(_ bannerView: GADBannerView) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + CampaignManager.shared.startAfterSeconds) {
-            self.insideAdCallbackDelegate?.insideAdCallbackReceived(data: EventTypeHandler.convertEventType(type: .LOADED))
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(InsideAdSdk.shared.activeInsideAd?.properties?.durationInSeconds ?? 10 + Int(CampaignManager.shared.startAfterSeconds))) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(CampaignManager.shared.activeInsideAd?.properties?.durationInSeconds ?? 10 + Int(CampaignManager.shared.startAfterSeconds))) {
             bannerView.removeFromSuperview()
-            self.adRequestStatus = .adRequested
             self.insideAdCallbackDelegate?.insideAdCallbackReceived(data: EventTypeHandler.convertEventType(type: .ALL_ADS_COMPLETED))
         }
     }
 
     func bannerView(_ bannerView: GADBannerView, didFailToReceiveAdWithError error: Error) {
-        if adRequestStatus == .fallbackRequested {
-            setupBannerView()
-            loadBannerAd()
-        } else {
-            NotificationCenter.post(name: .AdsContentView_startTimer)
             insideAdCallbackDelegate?.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: error.localizedDescription ))
-            adRequestStatus = .adRequested
-        }
+        // Handle fallback
     }
     
     func bannerViewDidRecordImpression(_ bannerView: GADBannerView) {

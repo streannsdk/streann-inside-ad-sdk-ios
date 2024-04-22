@@ -9,38 +9,37 @@ import SwiftUI
 import AVKit
 
 struct LocalVideoPlayerView: View {
+    @EnvironmentObject var playerManager: LocalVideoManager
+    @ObservedObject var adsManager = AdsManager.shared
+    
     @State private var playerIsMuted = false
     @Binding var insideAdCallback: InsideAdCallbackType
     
-    public init(insideAdCallback: Binding<InsideAdCallbackType>) {
-        self._insideAdCallback = insideAdCallback
-    }
-    
     var body: some View {
         ZStack{
-            if InsideAdSdk.shared.localVideoPlayerManager.player.status == .readyToPlay || insideAdCallback != .STARTED {
-                AVPlayerControllerWrapper(insideAdCallback: $insideAdCallback)
+            if insideAdCallback == .STARTED {
+                VideoPlayer(player: playerManager.player)
+                    .disabled(true)
                     .overlay(alignment: .top){
-                        LinearGradient(colors: [.black.opacity(0.4), .clear],
-                                       startPoint: .top,
-                                       endPoint: .center)
-                        .frame(maxWidth: .infinity, maxHeight: 110)
+                        ZStack(alignment: .top){
+                            LinearGradient(colors: [.black.opacity(0.4), .clear],
+                                           startPoint: .top,
+                                           endPoint: .center)
+                            .frame(maxWidth: .infinity, maxHeight: 110)
+                            
+                            topView
+                                .padding(8)
+                        }
                     }
-                
-                VStack{
-                    topView
-                    Spacer()
-                }
-                .padding(2)
-                .hide(if: !InsideAdSdk.shared.localVideoPlayerManager.playing)
-                .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-                    InsideAdSdk.shared.localVideoPlayerManager.play()
-                }
-                .onAppear {
-                    NotificationCenter.default.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main) { _ in
+                    .onAppear {
+                        NotificationCenter.default.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main) { _ in
+                            adsManager.localVideoManager.play()
+                        }
                     }
-                }
             }
+        }
+        .task {
+            adsManager.localVideoManager.loadAsset()
         }
     }
 }
@@ -59,7 +58,7 @@ extension LocalVideoPlayerView {
     
     private var closeButton: some View {
         Button {
-            InsideAdSdk.shared.localVideoPlayerManager.stop()
+            adsManager.localVideoManager.stop()
         } label: {
             Image(systemName: Constants.SystemImage.xMarkCircleFill)
                 .foregroundColor(.white)
@@ -68,7 +67,7 @@ extension LocalVideoPlayerView {
     
     @ViewBuilder
     private var learnMoreButton: some View {
-        if let url = InsideAdSdk.shared.activeInsideAd?.properties?.clickThroughUrl {
+        if let url = CampaignManager.shared.activeInsideAd?.properties?.clickThroughUrl {
             Link(destination: URL(string: url)!,
                  label: {
                 Text("Learn more")
@@ -79,7 +78,7 @@ extension LocalVideoPlayerView {
     
     private var volumeButton: some View {
         Button {
-            InsideAdSdk.shared.localVideoPlayerManager.player.isMuted.toggle()
+            adsManager.localVideoManager.player.isMuted.toggle()
             playerIsMuted.toggle()
         } label: {
             Image(systemName: playerIsMuted ? Constants.SystemImage.speakerSlashFill : Constants.SystemImage.speakerWaveTwoFill)
@@ -88,67 +87,57 @@ extension LocalVideoPlayerView {
     }
 }
 
-class LocalVideoPlayerManager : ObservableObject {
-    @Published var playing = false
-    
-    var player = AVPlayer()
-    var insideAdCallbackDelegate: InsideAdCallbackDelegate?
+class LocalVideoManager: ObservableObject {
+    @Published var player = AVPlayer()
     var observer: NSKeyValueObservation? = nil
-    private var adRequestStatus: AdRequestStatus = .adRequested
     
     func loadAsset() {
-        if player.currentItem == nil {
-            let asset = AVAsset(url: URL(string: InsideAdSdk.shared.activeInsideAd?.url ?? "")!)
-            let playerItem = AVPlayerItem(asset: asset)
-            player.replaceCurrentItem(with: playerItem)
-            self.observer = playerItem.observe(\.status, options:  [.new, .old], changeHandler: { [weak self] (playerItem, change) in
-                self?.playerItemStatusChanged(playerItem.status)
-            })
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + CampaignManager.shared.startAfterSeconds) {[weak self] in
-                self?.play()
+        if let url = URL(string: CampaignManager.shared.activeInsideAd?.url ?? "") {
+            if player.currentItem == nil {
+                DispatchQueue.main.asyncAfter(deadline: .now() + CampaignManager.shared.startAfterSeconds) {[weak self] in
+                let asset = AVAsset(url: url)
+                let playerItem = AVPlayerItem(asset: asset)
+                    self?.player.replaceCurrentItem(with: playerItem)
+                    self?.observer = playerItem.observe(\.status, options:  [.new, .old], changeHandler: { [weak self] (playerItem, change) in
+                    self?.playerItemStatusChanged(playerItem.status)
+                })
+                    self?.play()
+                }
             }
         }
     }
     
     func play() {
         player.play()
-        playing = true
     }
     
     func stop() {
         player.pause()
         player.replaceCurrentItem(with: nil)
-        playing = false
-        insideAdCallbackDelegate?.insideAdCallbackReceived(data: .ALL_ADS_COMPLETED)
+        observer = nil
+        AdsManager.shared.insideAdCallback = .ALL_ADS_COMPLETED
     }
     
     func playerItemStatusChanged(_ status: AVPlayerItem.Status){
         if status == .readyToPlay {
-            insideAdCallbackDelegate?.insideAdCallbackReceived(data: .STARTED)
+            AdsManager.shared.insideAdCallback = .STARTED
             
             if let item = player.currentItem {
                 DispatchQueue.main.asyncAfter(deadline: .now() + CMTimeGetSeconds(item.duration)) { [weak self] in
-                    self?.insideAdCallbackDelegate?.insideAdCallbackReceived(data: .ALL_ADS_COMPLETED)
-                    self?.playing = false
-                    InsideAdSdk.shared.localVideoPlayerManager.player.replaceCurrentItem(with: nil)
+                    AdsManager.shared.insideAdCallback = .ALL_ADS_COMPLETED
+                    self?.player.replaceCurrentItem(with: nil)
+                    self?.observer = nil
                 }
             }
         } else if status == .failed {
-            if adRequestStatus == .adRequested {
-                adRequestStatus = .fallbackRequested
-                if let url = URL(string: InsideAdSdk.shared.activeInsideAd?.fallback?.url ?? "") {
-                    preparePlayer(url: url)
-                    player.play()
-                }
-            } else {
-                insideAdCallbackDelegate?.insideAdCallbackReceived(data: .IMAAdError("AVPlayer.status.failed"))
-                NotificationCenter.post(name: .AdsContentView_startTimer)
-                InsideAdSdk.shared.localVideoPlayerManager.player.replaceCurrentItem(with: nil)
-            }
+            AdsManager.shared.insideAdCallback = .IMAAdError("AVPlayer.status.failed")
+//                NotificationCenter.post(name: .AdsContentView_startTimer)
+           player.replaceCurrentItem(with: nil)
+            observer = nil
         } else{
-            insideAdCallbackDelegate?.insideAdCallbackReceived(data: .UNKNOWN)
-            InsideAdSdk.shared.localVideoPlayerManager.player.replaceCurrentItem(with: nil)
+            AdsManager.shared.insideAdCallback = .UNKNOWN
+            player.replaceCurrentItem(with: nil)
+            observer = nil
         }
     }
     
@@ -159,25 +148,5 @@ class LocalVideoPlayerManager : ObservableObject {
         self.observer = playerItem.observe(\.status, options:  [.new, .old], changeHandler: { [weak self] (playerItem, change) in
             self?.playerItemStatusChanged(playerItem.status)
         })
-    }
-}
-
-struct AVPlayerControllerWrapper : UIViewControllerRepresentable, InsideAdCallbackDelegate {
-    @Binding var insideAdCallback: InsideAdCallbackType
-    
-    func makeUIViewController(context: UIViewControllerRepresentableContext<AVPlayerControllerWrapper>) -> AVPlayerViewController {
-        let controller = AVPlayerViewController()
-        controller.player =  InsideAdSdk.shared.localVideoPlayerManager.player
-        controller.showsPlaybackControls = false
-//        InsideAdSdk.shared.localVideoPlayerManager.loadAsset()
-        InsideAdSdk.shared.localVideoPlayerManager.insideAdCallbackDelegate = self
-        return controller
-    }
-    
-    func updateUIViewController(_ uiViewController: AVPlayerViewController, context: UIViewControllerRepresentableContext<AVPlayerControllerWrapper>) {
-    }
-    
-    func insideAdCallbackReceived(data: InsideAdCallbackType) {
-        insideAdCallback = data
     }
 }

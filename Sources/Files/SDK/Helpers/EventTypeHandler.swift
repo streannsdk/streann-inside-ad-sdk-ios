@@ -29,7 +29,6 @@ struct EventTypeHandler {
     
     static func convertErrorType(message: String) -> InsideAdCallbackType{
         let errorType = InsideAdCallbackType.IMAAdError(message)
-        NotificationCenter.post(name: .AdsContentView_setZeroSize)
         return errorType
     }
 }

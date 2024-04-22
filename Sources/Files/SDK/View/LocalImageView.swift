@@ -8,37 +8,32 @@
 import SwiftUI
 
 struct LocalImageView: View {
+    @EnvironmentObject var localImageManager: LocalImageManager
     @Binding var insideAdCallback: InsideAdCallbackType
-        
-    public init(insideAdCallback: Binding<InsideAdCallbackType>) {
-        self._insideAdCallback = insideAdCallback
-    }
     
     var body: some View {
         ZStack {
-            if let image = InsideAdSdk.shared.imageLoader.image {
+            if let image = localImageManager.image {
                 Image(uiImage: image)
                     .resizable()
-                
-                VStack{
-                    topView
-                    Spacer()
-                }
-                .padding(2)
-                .hide(if: InsideAdSdk.shared.imageLoader.image == nil)
+                    .overlay {
+                        VStack{
+                            topView
+                            Spacer()
+                        }
+                        .padding(2)
+                    }
             }
         }
-        .onReceive(InsideAdSdk.shared.imageLoader.$image) { image in
+        .onChange(of: localImageManager.image) { image in
             if image != nil {
-                insideAdCallback = .LOADED
+                insideAdCallback = .STARTED
             } else {
                 insideAdCallback = .ALL_ADS_COMPLETED
             }
         }
         .task {
-            if InsideAdSdk.shared.imageLoader.image == nil {
-                InsideAdSdk.shared.imageLoader.loadImage()
-            }
+            localImageManager.loadImage()
         }
     }
 }
@@ -56,7 +51,7 @@ extension LocalImageView {
     
     private var closeButton: some View {
         Button {
-            InsideAdSdk.shared.imageLoader.closeAdAndResetImage()
+            localImageManager.closeAdAndResetImage()
         } label: {
             Image(systemName: Constants.SystemImage.xMarkCircleFill)
                 .foregroundColor(.white)
@@ -65,7 +60,7 @@ extension LocalImageView {
     
     @ViewBuilder
     private var learnMoreButton: some View {
-        if let url = InsideAdSdk.shared.activeInsideAd?.properties?.clickThroughUrl {
+        if let url = CampaignManager.shared.activeInsideAd?.properties?.clickThroughUrl {
             Link(destination: URL(string: url)!,
                  label: {
                 Text("Learn more")
@@ -75,35 +70,25 @@ extension LocalImageView {
     }
 }
 
-class LocalImageLoaderManager: ObservableObject {
+class LocalImageManager: ObservableObject {
     @Published var image: UIImage?
-    var insideAdCallback: InsideAdCallbackType?
-    
-    private var adRequestStatus: AdRequestStatus = .adRequested
     
     func loadImage() {
-        guard let url = URL(string: (adRequestStatus == .adRequested ? InsideAdSdk.shared.activeInsideAd?.url : InsideAdSdk.shared.activeInsideAd?.fallback?.url) ?? "") else { return }
+        if image != nil{
+            return
+        }
+        guard let url = URL(string: (CampaignManager.shared.activeInsideAd?.url) ?? "") else { return }
 
         let task = URLSession.shared.dataTask(with: url) {[weak self] data, response, error in
             guard let data = data else {
-                if self?.adRequestStatus == .adRequested {
-                    self?.adRequestStatus = .fallbackRequested
-                    self?.loadImage()
-                    return
-                } else {
-                    DispatchQueue.main.async {
-                        NotificationCenter.post(name: .AdsContentView_startTimer)
-                        self?.insideAdCallback = .IMAAdError(error?.localizedDescription ?? "")
-                    }
-                    return
-                }
+                //TODO: - request fallback logic to be implemented
+                return
             }
             
             DispatchQueue.main.asyncAfter(deadline: .now() + CampaignManager.shared.startAfterSeconds) {
                 self?.image = UIImage(data: data)
-                NotificationCenter.post(name: .AdsContentView_setFullSize)
-                self?.insideAdCallback = .LOADED
-                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(InsideAdSdk.shared.activeInsideAd?.properties?.durationInSeconds ?? 1)) {
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(CampaignManager.shared.activeInsideAd?.properties?.durationInSeconds ?? 1)) {
                     self?.closeAdAndResetImage()
                 }
             }
@@ -113,7 +98,6 @@ class LocalImageLoaderManager: ObservableObject {
     
     func closeAdAndResetImage() {
         DispatchQueue.main.async {[weak self] in
-            self?.insideAdCallback = .ALL_ADS_COMPLETED
             self?.image = nil
         }
     }

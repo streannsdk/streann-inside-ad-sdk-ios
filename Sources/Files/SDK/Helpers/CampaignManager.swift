@@ -11,16 +11,20 @@ class CampaignManager: ObservableObject {
     
     static let shared = CampaignManager()
     
-    @Published var adViewWidth: CGFloat = 0
-    @Published var adViewHeight: CGFloat = 0
-    @Published var adLoaded = false
+    @Published var activePlacement: Placement?
+    @Published var activeInsideAd: InsideAd?
+    @Published var activeCampaign: CampaignAppModel?
+    
+    @Published var fetchCompleted = false
     
     var adLoader: NativeAdLoaderViewModel?
     var allPlacements = [Placement]()
     var geoIp: GeoIp?
-    var vastRequested = false
     var allActiveCampaigns = [CampaignAppModel]()
     var isDeviceRotated =  false
+    
+    var screen = ""
+    var targetModel: TargetModel?
     
     func getAllCampaigns() {
         if Constants.ResellerInfo.apiKey == "" {
@@ -65,7 +69,7 @@ class CampaignManager: ObservableObject {
                                             self.checkIfAdHasTagForReels()
                                             // Delay for the native ad to load
                                             DispatchQueue.main.asyncAfter(deadline: .now() + self.delayLaunchForNativeAd) {
-                                                self.adLoaded = true
+                                                self.fetchCompleted = true
                                             }
                                         } else {
                                             let errorMsg = Logger.log("Error while getting AD.")
@@ -81,6 +85,20 @@ class CampaignManager: ObservableObject {
         }
     }
     
+    func findActiveAdForScreen(){
+        DispatchQueue.main.async {
+            self.activeCampaign = self.allActiveCampaigns.findActiveCampaignFromScreenAndTargetModel(screen: self.screen, targetModel: self.targetModel)
+            self.activeInsideAd = self.allPlacements.activeAdFromPlacement()
+            self.activePlacement = TargetManager.shared.activePlacement()
+        }
+    }
+    
+    func invalidateActiveAds(){
+        activeInsideAd = nil
+        activePlacement = nil
+    }
+
+    
     private func checkIfAdHasTagForReels() {
         allPlacements.forEach { $0.tags?.forEach { if $0 == "Reels" { InsideAdSdk.shared.hasAdForReels = true } } }
     }
@@ -88,13 +106,13 @@ class CampaignManager: ObservableObject {
 
 extension CampaignManager {
     var startAfterSeconds: Double {
-            if InsideAdSdk.shared.activeInsideAd?.adType != .FULLSCREEN_NATIVE &&
-                InsideAdSdk.shared.currentAdScreen != InsideAdScreenLocations.reels.rawValue {
-                return Double(InsideAdSdk.shared.activePlacement?.properties?.startAfterSeconds ?? 5)
-            } else {
-                return 0
-            }
+        if activeInsideAd?.adType != .FULLSCREEN_NATIVE &&
+            screen != InsideAdScreenLocations.reels.rawValue {
+            return Double(activePlacement?.properties?.startAfterSeconds ?? 5)
+        } else {
+            return 0
         }
+    }
     
     private var delayLaunchForNativeAd: Double {
         return adLoader != nil ? 1.5 : 0

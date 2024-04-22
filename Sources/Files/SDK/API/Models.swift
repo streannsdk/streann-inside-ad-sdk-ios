@@ -184,7 +184,7 @@ public struct TargetModel {
     public var contentProviderId: String?
     public var categoryIds: [String]?
     
-    public init(contentId: String? = nil, contentType: String? = nil, seriesId: String? = nil, contentProviderId: String? = nil, categoryIds: [String]? = nil) {
+    public init(contentId: String? = nil, contentType: String?, seriesId: String? = nil, contentProviderId: String? = nil, categoryIds: [String]? = nil) {
         self.contentId = contentId
         self.contentType = contentType
         self.seriesId = seriesId
@@ -273,7 +273,7 @@ extension Array where Array.Element == Placement{
         CampaignManager.shared.allActiveCampaigns.forEach { CampaignManager.shared.allPlacements.append(contentsOf: $0.placements ?? []) }
         
         // List of all ads in all placements that belong to the campaign that match the location.
-        InsideAdSdk.shared.activeCampaign?.placements?.forEach({ allAdsFromPlacement.append(contentsOf: $0.ads ?? []) })
+        CampaignManager.shared.activeCampaign?.placements?.forEach({ allAdsFromPlacement.append(contentsOf: $0.ads ?? []) })
         
         return TargetManager.shared.selectObjectWithWeight(objects: allAdsFromPlacement)
     }

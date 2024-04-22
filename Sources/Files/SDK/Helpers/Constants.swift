@@ -24,7 +24,6 @@ struct Constants {
         static var storeUrl = ""
         static var descriptionUrl = ""
         static var appDomain = ""
-        static var intervalInMinutes: Double?
         static var isAdMuted: Bool = false
     }
     
