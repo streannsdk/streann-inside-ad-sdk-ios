@@ -184,7 +184,7 @@ public struct TargetModel {
     public var contentProviderId: String?
     public var categoryIds: [String]?
     
-    public init(contentId: String? = nil, contentType: String?, seriesId: String? = nil, contentProviderId: String? = nil, categoryIds: [String]? = nil) {
+    public init(contentId: String? = nil, contentType: String? = nil, seriesId: String? = nil, contentProviderId: String? = nil, categoryIds: [String]? = nil) {
         self.contentId = contentId
         self.contentType = contentType
         self.seriesId = seriesId
