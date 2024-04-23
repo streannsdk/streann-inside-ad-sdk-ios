@@ -13,6 +13,7 @@ class AdsManager: ObservableObject {
     
     @Published var insideAdCallback: InsideAdCallbackType = .UNKNOWN{
         didSet{
+            print("DEBUG: insideAdCallback \(insideAdCallback)")
             if insideAdCallback == .STARTED {
                 setFullSize()
             }
