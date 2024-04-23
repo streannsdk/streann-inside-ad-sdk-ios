@@ -70,7 +70,6 @@ class CampaignManager: ObservableObject {
                                             // Delay for the native ad to load
                                             DispatchQueue.main.asyncAfter(deadline: .now() + self.delayLaunchForNativeAd) {
                                                 self.fetchCompleted = true
-                                                print("DEBUG: finishedFetchRequests \(self.fetchCompleted)")
                                             }
                                         } else {
                                             let errorMsg = Logger.log("Error while getting AD.")
@@ -91,7 +90,6 @@ class CampaignManager: ObservableObject {
             self.activeCampaign = self.allActiveCampaigns.findActiveCampaignFromScreenAndTargetModel(screen: self.screen, targetModel: self.targetModel)
             self.activeInsideAd = self.allPlacements.activeAdFromPlacement()
             self.activePlacement = TargetManager.shared.activePlacement()
-            print("DEBUG: findActiveAdForScreen \(self.screen) ad type: \(self.activeInsideAd?.adType?.rawValue)")
         }
     }
     
