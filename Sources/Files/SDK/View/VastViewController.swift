@@ -26,6 +26,7 @@ class VastViewController: UIViewController, ObservableObject {
         
     init() {
         super.init(nibName: nil, bundle: nil)
+        print("DEBUG: VAST VC init")
         adsLoader.delegate = self
         addImmadPlayerView()
     }
@@ -37,6 +38,7 @@ class VastViewController: UIViewController, ObservableObject {
     // MARK: - View controller lifecycle methods
     override func viewDidLoad() {
         super.viewDidLoad()
+        print("DEBUG: VAST VC did load")
     }
     
     override func viewWillLayoutSubviews() {
@@ -49,6 +51,7 @@ class VastViewController: UIViewController, ObservableObject {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         volumeButton?.removeFromSuperview()
+        print("DEBUG: VAST VC viewWillDisappear")
     }
     
     private func addImmadPlayerView(){
@@ -76,6 +79,7 @@ class VastViewController: UIViewController, ObservableObject {
     
     @objc private func volumeButtonAction(_ sender: UIButton) {
         Constants.ResellerInfo.isAdMuted = !Constants.ResellerInfo.isAdMuted
+        print(Logger.log(" Volume changed to: \(adsManager?.volume ?? 0)"))
         setImmadVolume()
     }
     
@@ -86,6 +90,7 @@ class VastViewController: UIViewController, ObservableObject {
     
     // MARK: IMA integration methods
     func requestAds() {
+        print("DEBUG: VAST VC requestAds")
         let activeInsideAd = CampaignManager.shared.activeInsideAd
         let url = activeInsideAd?.url
         
@@ -117,6 +122,8 @@ extension VastViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     func adsManagerAdPlaybackReady(_ adsManager: IMAAdsManager) {
         setImmadVolume()
         adsManager.start()
+        
+            print("DEBUG: VAST VC adsManagerAdPlaybackReady")
     }
     
     func adsLoader(_ loader: IMAAdsLoader, adsLoadedWith adsLoadedData: IMAAdsLoadedData) {
@@ -130,6 +137,8 @@ extension VastViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
         
         // Initialize the ads manager.
         adsManager?.initialize(with: adsRenderingSettings)
+        
+        print("DEBUG: VAST VC adsLoaded")
     }
     
     func adsLoader(_ loader: IMAAdsLoader, failedWith adErrorData: IMAAdLoadingErrorData) {
@@ -139,10 +148,14 @@ extension VastViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
             // Start the timer to call the next ad interval
 //            volumeButton?.removeFromSuperview()
             print(Logger.log("\(adErrorData.adError.message ?? "Unknown error")"))
+//        }
+        
+        print("DEBUG: VAST VC adsLoader Error \(adErrorData.adError.message ?? "Unknown error")")
     }
     
     // MARK: - IMAAdsManagerDelegate
     func adsManager(_ adsManager: IMAAdsManager, didReceive event: IMAAdEvent) {
+//        print("DEBUG: VAST VC event \(event.typeString)")
         if event.type == IMAAdEventType.LOADED {
             // When the SDK notifies us that ads have been loaded, play them.
             adsManager.start()
@@ -175,6 +188,7 @@ extension VastViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
         //TODO: - request fallback logic to be implemented
         insideAdCallbackDelegate?.insideAdCallbackReceived(data: EventTypeHandler.convertErrorType(message: error.message ?? ""))
         print(Logger.log("\(error.message ?? "Unknown error")"))
+        print("DEBUG: VAST VC adsManager Error \(error.message ?? "Unknown error")")
     }
     
     func adsManagerDidRequestContentPause(_ adsManager: IMAAdsManager) {
@@ -189,7 +203,7 @@ extension VastViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     }
     
     func adsManagerAdDidStartBuffering(_ adsManager: IMAAdsManager) {
-        
+        print("buffering started")
     }
 }
 
@@ -211,5 +225,6 @@ struct VastViewWrapper: UIViewRepresentable, InsideAdCallbackDelegate {
     
     func insideAdCallbackReceived(data: InsideAdCallbackType) {
         insideAdCallback = data
+        print("delegateState \(data)")
     }
 }
