@@ -13,7 +13,6 @@ class AdsManager: ObservableObject {
     
     @Published var insideAdCallback: InsideAdCallbackType = .UNKNOWN{
         didSet{
-            print("DEBUG: insideAdCallback \(insideAdCallback)")
             if insideAdCallback == .STARTED {
                 setFullSize()
             }
@@ -62,7 +61,7 @@ class AdsManager: ObservableObject {
         
         
         if let intervalInMinutes, intervalInMinutes > 0 {
-            print("DEBUG: Timer started for next ad - intervalInMinutes \(intervalInMinutes)")
+            print(Logger.log("DEBUG: Timer started for next ad - intervalInMinutes \(intervalInMinutes)"))
             timerNextAd = Timer.scheduledTimer(withTimeInterval: TimeInterval(intervalInMinutes.convertMinutesToSeconds()), repeats: false){ _ in
                 CampaignManager.shared.findActiveAdForScreen()
             }
