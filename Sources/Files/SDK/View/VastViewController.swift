@@ -118,8 +118,6 @@ extension VastViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     func adsManagerAdPlaybackReady(_ adsManager: IMAAdsManager) {
         setImmadVolume()
         adsManager.start()
-        
-            print("DEBUG: VAST VC adsManagerAdPlaybackReady")
     }
     
     func adsLoader(_ loader: IMAAdsLoader, adsLoadedWith adsLoadedData: IMAAdsLoadedData) {
@@ -193,7 +191,7 @@ extension VastViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     }
     
     func adsManagerAdDidStartBuffering(_ adsManager: IMAAdsManager) {
-        print("buffering started")
+        //
     }
 }
 
@@ -215,6 +213,5 @@ struct VastViewWrapper: UIViewRepresentable, InsideAdCallbackDelegate {
     
     func insideAdCallbackReceived(data: InsideAdCallbackType) {
         insideAdCallback = data
-        print("delegateState \(data)")
     }
 }
