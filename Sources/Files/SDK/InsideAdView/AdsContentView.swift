@@ -79,9 +79,9 @@ struct AdsContentView: View {
         .onChange(of: adsManager.insideAdCallback) { newValue in
             self.delegate?.insideAdCallbackReceived(data: newValue)
         }
-//        .onAppear(perform: {
-//            adViewId = UUID()
-//        })
+       .onAppear(perform: {
+           adViewId = UUID()
+       })
         .onDisappear{
             //If the device is rotated, don't reset the ad otherwise reset the ad
             if !campaignManager.isDeviceRotated {
@@ -95,7 +95,7 @@ struct AdsContentView: View {
     private func findActiveAdForScreen(){
         if adsManager.insideAdCallback == .UNKNOWN || adsManager.insideAdCallback == .ALL_ADS_COMPLETED{
             campaignManager.findActiveAdForScreen()
-//            adViewId = UUID()
+           adViewId = UUID()
         }
     }
 }
