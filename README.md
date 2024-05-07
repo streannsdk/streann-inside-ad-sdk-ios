@@ -4,7 +4,7 @@ This is an adds support for SwiftUI Package to the Google Interactive Media Ads 
 
 ## Current supported version:
 
-iOS: `14.0`
+iOS: `15.0`
 
 ## Getting Started
 
@@ -21,100 +21,48 @@ To use this SwiftUI Package in your Xcode project, follow these steps:
     ```Swift
     import streann_inside_ad_sdk_ios
     ```
-7. Initialize the SDK with the baseUrl and apiKey in the main Scene. The both parameters are mandatory. Read the StreannInsideAdSDK log in the console for errors:
+7. Initialize the SDK with the baseUrl, apiKey and apiToken in the main Scene or AppDelegate. These parameters are mandatory:
     ```Swift
-    ContentView()
-        .onAppear {
-            StreannInsideAdSdk.initializeSdk(baseUrl: "some base url", apiKey: "some api key")
-        }
-    ```
-    You could also implement the optional parameters:
-    ```Swift
-    siteUrl: String, 
-    storeUrl: String, 
-    descriptionUrl: String, 
-    userBirthYear: Int64, 
-    userGender: UserGender(Enum)
+        _ = InsideAdSdk.init(baseUrl: "some base url", apiKey: "some api key")
     ```
     
 8. In the view where the the Ad will be presented import the streann-inside-ad-sdk-ios module:
     ```Swift
     import streann_inside_ad_sdk_ios
     ```
-9. Create an instance of the streann-inside-ad-sdk-ios module:
+9. Implement the protocol of the streann-inside-ad-sdk-ios:
     ```Swift
-    var streannInsideAdSdk  = StreannInsideAdSdk()
+    struct SomeView: View, InsideAdCallbackDelegate
     ```
-10. Create a State String property with ".UNKNOWN" status to receive the insideAd status callbacks (errors and ad player's state'):
+    
+10. Create a State String property with ".UNKNOWN" status to receive the insideAd status callbacks (errors and ad player's state):
     ```Swift
-    @State var insideAdPlayerState: InsideAdCallbackType = .UNKNOWN
+    @State var insideAdCallback: InsideAdCallbackType = .UNKNOWN
     ```
-    This property can be iterated over for further user actions
-    In a View:
+    
+11. Implement the delegate function of the of the streann-inside-ad-sdk-ios to update the status of the callback property:
     ```Swift
-    VStack {
-        switch insideAdPlayerState {
-            case .IMAAdError(let message):
-                Text(message)
-            default:
-                Text("Loaded")
-            }
-    ```
-    In a function:
-    ```Swift
-    func checkStreannInsideAdCallback() {
-        switch insideAdPlayerState {
-        case .COMPLETE:
-        //do something
-        print("Ad completed")
-        default:
-        break
+        func insideAdCallbackReceived(data: InsideAdCallbackType) {
+            insideAdCallback = data
         }
-    }
     ```
-    Callbacks:
+    
+12. Create the sdk ad view with the parameters to request an ad in the view body. 
+    This will return a view:
     ```Swift
-    case AD_BREAK_READY
-    case AD_BREAK_FETCH_ERROR
-    case AD_BREAK_ENDED
-    case AD_BREAK_STARTED
-    case AD_PERIOD_ENDED
-    case AD_PERIOD_STARTED
-    case ALL_ADS_COMPLETED
-    case CLICKED
-    case COMPLETE
-    case CUEPOINTS_CHANGED
-    case ICON_FALLBACK_IMAGE_CLOSED
-    case ICON_TAPPED
-    case FIRST_QUARTILE
-    case LOADED
-    case LOG
-    case MIDPOINT
-    case PAUSE
-    case RESUME
-    case SKIPPED
-    case STARTED
-    case STREAM_LOADED
-    case STREAM_STARTED
-    case TAPPED
-    case THIRD_QUARTILE
-    case UNKNOWN
-    case IMAAdError(String) // where the String is the error message
-    ```
-    Alse the callbacks can be read from the console with "StreannInsideAdSDK" prefix: 
-    ```Swift
-    "StreannInsideAdSDK: Started"
-    "StreannInsideAdSDK: Loaded"
-    "StreannInsideAdSDK: Started First Quartile"
-    "StreannInsideAdSDK: Midpoint"
-    "StreannInsideAdSDK: Third Quartile"
-    "StreannInsideAdSDK: Complete"
-    "StreannInsideAdSDK: All Ads Completed"
-    "StreannInsideAdSDK: The VAST response document is empty"
-    ```    
-11. Insert the screenName (e.g. "Launch") as a parameter and request the ad in the view body. This will return a view:
+        InsideAdSdk.shared.insideAdView(delegate: self)
+    ```  
+    
+    Optionally add content targeting with the parameters (all optional).
     ```Swift
     var body: some View {
-        streannInsideAdSdk.requestAd(screen: "Launch", insideAdCallback: $insideAdCallback)
+        InsideAdSdk.shared.insideAdView(delegate: self, screen: "some screen", isAdMuted: Bool, contentTargeting: TargetModel(contentId: "some id", contentType: "some content type", seriesId: "some session id", contentProviderId: "some content provider", categoryIds:  "[some array of categories ids]"))
+    }        
+    ```
+    
+13. If needed read the sdk public parameters if the campaign contains reels and ther interval
+    ```Swift
+    InsideAdSdk.shared.hasAdForReels: Bool
+    InsideAdSdk.shared.intervalForReels: Int 
     }        
     ```
