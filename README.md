@@ -23,7 +23,7 @@ To use this SwiftUI Package in your Xcode project, follow these steps:
     ```
 7. Initialize the SDK with the baseUrl, apiKey and apiToken in the main Scene or AppDelegate. These parameters are mandatory:
     ```Swift
-        _ = InsideAdSdk.init(baseUrl: "some base url", apiKey: "some api key")
+    _ = InsideAdSdk.init(baseUrl: "some base url", apiKey: "some api key")
     ```
     
 8. In the view where the the Ad will be presented import the streann-inside-ad-sdk-ios module:
@@ -42,21 +42,28 @@ To use this SwiftUI Package in your Xcode project, follow these steps:
     
 11. Implement the delegate function of the of the streann-inside-ad-sdk-ios to update the status of the callback property:
     ```Swift
-        func insideAdCallbackReceived(data: InsideAdCallbackType) {
-            insideAdCallback = data
-        }
+    func insideAdCallbackReceived(data: InsideAdCallbackType) {
+        insideAdCallback = data
+    }
     ```
     
 12. Create the sdk ad view with the parameters to request an ad in the view body. 
     This will return a view:
     ```Swift
-        InsideAdSdk.shared.insideAdView(delegate: self)
+    InsideAdSdk.shared.insideAdView(delegate: self)
     ```  
     
     Optionally add content targeting with the parameters (all optional).
     ```Swift
     var body: some View {
-        InsideAdSdk.shared.insideAdView(delegate: self, screen: "some screen", isAdMuted: Bool, contentTargeting: TargetModel(contentId: "some id", contentType: "some content type", seriesId: "some session id", contentProviderId: "some content provider", categoryIds:  "[some array of categories ids]"))
+        InsideAdSdk.shared.insideAdView(delegate: self, 
+        screen: "some screen", 
+        isAdMuted: Bool, 
+        contentTargeting: TargetModel(contentId: "some id", 
+                                    contentType: "some content type", 
+                                    seriesId: "some session id", 
+                                    contentProviderId: "some content provider", 
+                                    categoryIds:  "[some array of categories ids]"))
     }        
     ```
     
@@ -64,5 +71,4 @@ To use this SwiftUI Package in your Xcode project, follow these steps:
     ```Swift
     InsideAdSdk.shared.hasAdForReels: Bool
     InsideAdSdk.shared.intervalForReels: Int 
-    }        
     ```
