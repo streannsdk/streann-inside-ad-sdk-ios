@@ -25,29 +25,42 @@ To use this SwiftUI Package in your Xcode project, follow these steps:
     ```Swift
     _ = InsideAdSdk.init(baseUrl: "some base url", apiKey: "some api key")
     ```
-    
-8. In the view where the the Ad will be presented import the streann-inside-ad-sdk-ios module:
+8. Update your app's Info.plist file to add two keys:
+    1. GADApplicationIdentifier key with a string value of your AdMob app ID found in the AdMob UI.
+    2. SKAdNetworkItems key with SKAdNetworkIdentifier values for Google (cstr6suwn9.skadnetwork) and select third-party buyers who have provided these values to Google.
+    ```Swift
+    <key>GADApplicationIdentifier</key>
+    <string>ca-app-pub-xxxxxxxxxxxxxxxx~yyyyyyyyyy</string>
+    <key>SKAdNetworkItems</key>
+    <array>
+        <dict>
+            <key>SKAdNetworkIdentifier</key>
+            <string>cstr6suwn9.skadnetwork</string>
+        </dict>
+    <array>
+    ```
+9. In the view where the the Ad will be presented import the streann-inside-ad-sdk-ios module:
     ```Swift
     import streann_inside_ad_sdk_ios
     ```
-9. Implement the protocol of the streann-inside-ad-sdk-ios:
+10. Implement the protocol of the streann-inside-ad-sdk-ios:
     ```Swift
     struct SomeView: View, InsideAdCallbackDelegate
     ```
     
-10. Create a State String property with ".UNKNOWN" status to receive the insideAd status callbacks (errors and ad player's state):
+11. Create a State String property with ".UNKNOWN" status to receive the insideAd status callbacks (errors and ad player's state):
     ```Swift
     @State var insideAdCallback: InsideAdCallbackType = .UNKNOWN
     ```
     
-11. Implement the delegate function of the of the streann-inside-ad-sdk-ios to update the status of the callback property:
+12. Implement the delegate function of the of the streann-inside-ad-sdk-ios to update the status of the callback property:
     ```Swift
     func insideAdCallbackReceived(data: InsideAdCallbackType) {
         insideAdCallback = data
     }
     ```
     
-12. Create the sdk ad view with the parameters to request an ad in the view body. 
+13. Create the sdk ad view with the parameters to request an ad in the view body. 
     This will return a view:
     ```Swift
     InsideAdSdk.shared.insideAdView(delegate: self)
@@ -67,7 +80,7 @@ To use this SwiftUI Package in your Xcode project, follow these steps:
     }        
     ```
     
-13. If needed read the sdk public parameters if the campaign contains reels and ther interval
+14. If needed read the sdk public parameters if the campaign contains reels and ther interval
     ```Swift
     InsideAdSdk.shared.hasAdForReels: Bool
     InsideAdSdk.shared.intervalForReels: Int 
