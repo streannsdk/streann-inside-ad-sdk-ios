@@ -160,8 +160,8 @@ public enum AdType: String, Codable {
 }
 
 class TimePeriod: Codable {
-    var startTime: Date? //00:00:00
-    var endTime: Date? //23:30:45
+    var startTime: String? //00:00:00
+    var endTime: String? //23:30:45
     var daysOfWeek: [String]? //MONDAY, WEDNESDAY
 }
 
@@ -259,8 +259,8 @@ extension Array where Array.Element == TimePeriod{
     func filterByTime() -> [TimePeriod] {
         let periods = self.filter { $0.startTime != nil && $0.endTime != nil }
         let activePeriods = periods.filter {
-            $0.startTime!.secondsFromBeginningOfTheDay() <= Date().secondsFromBeginningOfTheDay() &&
-            $0.endTime!.secondsFromBeginningOfTheDay() >= Date().secondsFromBeginningOfTheDay()
+            $0.startTime!.secondsFromBeginningOfTheDayFromString() <= Int(Date().secondsFromBeginningOfTheDay()) &&
+            $0.endTime!.secondsFromBeginningOfTheDayFromString() >= Int(Date().secondsFromBeginningOfTheDay())
         }
         return activePeriods
     }
@@ -297,5 +297,20 @@ extension Array where Array.Element == Placement{
 extension Array where Array.Element == InsideAd{
     func findBy(adId: String) -> InsideAd?{
         return self.filter { $0.id == adId }.first
+    }
+}
+
+extension String {
+    func secondsFromBeginningOfTheDayFromString() -> Int {
+        var seconds = 0
+        let timeComponents = self.split(separator: ":").map { String($0) }
+        
+        if let hours = Int(timeComponents[0]),
+           let minutes = Int(timeComponents[1]),
+           let seconds = Int(timeComponents[2]) {
+            return (hours * 3600) + (minutes * 60) + seconds
+        } else {
+            return seconds
+        }
     }
 }
