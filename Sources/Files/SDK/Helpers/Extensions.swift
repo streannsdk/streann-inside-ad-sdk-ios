@@ -46,10 +46,11 @@ extension Date {
     }
     
     func secondsFromBeginningOfTheDay() -> TimeInterval {
+        let now = Date()
         let calendar = Calendar.current
-        let dateComponents = calendar.dateComponents([.hour, .minute, .second], from: self)
-        let dateSeconds = dateComponents.hour! * 3600 + dateComponents.minute! * 60 + dateComponents.second!
-        return TimeInterval(dateSeconds)
+        let components = calendar.dateComponents([.hour, .minute, .second], from: now)
+        let secondsSinceStartOfDay = (components.hour! * 3600) + (components.minute! * 60) + components.second!
+        return TimeInterval(secondsSinceStartOfDay)
     }
 }
 
