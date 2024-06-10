@@ -45,6 +45,7 @@ class AdsManager: ObservableObject {
         vastController = nil
         bannerAdViewController = nil
         AdsManager.shared.localVideoManager.player.replaceCurrentItem(with: nil)
+        localImageManager.image = nil
         setZeroSize()
         
         timerNextAd = nil
