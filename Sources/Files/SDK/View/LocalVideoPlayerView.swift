@@ -16,7 +16,7 @@ struct LocalVideoPlayerView: View {
     
     var body: some View {
         ZStack{
-            if insideAdCallback == .STARTED {
+            if insideAdCallback == .STARTED || insideAdCallback == .VOLUME_CHANGED(0) ||  insideAdCallback == .VOLUME_CHANGED(1) {
                 VideoPlayer(player: playerManager.player)
                     .disabled(true)
                     .overlay(alignment: .top){
@@ -78,6 +78,7 @@ extension LocalVideoPlayerView {
     private var volumeButton: some View {
         Button {
             adsManager.localVideoManager.playerIsMuted.toggle()
+            insideAdCallback =  .VOLUME_CHANGED(adsManager.localVideoManager.playerIsMuted ? 0 : 1)
         } label: {
             Image(systemName: adsManager.localVideoManager.playerIsMuted ? Constants.SystemImage.speakerSlashFill : Constants.SystemImage.speakerWaveTwoFill)
                 .foregroundColor(.white)
