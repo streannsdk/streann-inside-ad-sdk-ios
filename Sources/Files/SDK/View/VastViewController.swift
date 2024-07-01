@@ -29,7 +29,7 @@ class VastViewController: UIViewController, ObservableObject {
         adsLoader.delegate = self
         addImmadPlayerView()
 
-        NotificationCenter.default.addObserver(self, selector: #selector(self.changeAdVolume(notification:)), name: Notification.Name("changeInsideAdSdkAdVolume"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.changeAdVolume(notification:)), name: Notification.Name(Constants.Notifications.changeInsideAdSdkAdVolume), object: nil)
     }
     
     required init?(coder: NSCoder) {
@@ -78,7 +78,7 @@ class VastViewController: UIViewController, ObservableObject {
     }
 
     @objc func changeAdVolume(notification: Notification) {
-        if let notification = notification.userInfo?["isAdMuted"] as? Bool {
+        if let notification = notification.userInfo?[Constants.Notifications.isAdMuted] as? Bool {
             Constants.ResellerInfo.isAdMuted = !notification
             setImmadVolume()
         }
@@ -117,7 +117,7 @@ class VastViewController: UIViewController, ObservableObject {
     }
 
     deinit {
-        NotificationCenter.default.removeObserver(self, name: Notification.Name("changeInsideAdSdkAdVolume"), object: nil)
+        NotificationCenter.default.removeObserver(self, name: Notification.Name(Constants.Notifications.changeInsideAdSdkAdVolume), object: nil)
     }
 }
 
