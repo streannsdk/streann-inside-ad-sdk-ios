@@ -28,6 +28,8 @@ class VastViewController: UIViewController, ObservableObject {
         super.init(nibName: nil, bundle: nil)
         adsLoader.delegate = self
         addImmadPlayerView()
+
+        NotificationCenter.default.addObserver(self, selector: #selector(self.changeAdVolume(notification:)), name: Notification.Name("changeInsideAdSdkAdVolume"), object: nil)
     }
     
     required init?(coder: NSCoder) {
@@ -73,6 +75,10 @@ class VastViewController: UIViewController, ObservableObject {
         insideAdCallbackDelegate?.insideAdCallbackReceived(data: .VOLUME_CHANGED(Int(adsManager?.volume ?? 0)))
         
         print(Logger.log("Volume changed to: \(adsManager?.volume ?? 0)"))
+    }
+
+     @objc func changeAdVolume(notification: Notification) {
+        Constants.ResellerInfo.isAdMuted = !Constants.ResellerInfo.isAdMuted
     }
     
     private func setImmadVolume(){
