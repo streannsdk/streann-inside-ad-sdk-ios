@@ -77,10 +77,11 @@ class VastViewController: UIViewController, ObservableObject {
         print(Logger.log("Volume changed to: \(adsManager?.volume ?? 0)"))
     }
 
-     @objc func changeAdVolume(notification: Notification) {
-        Constants.ResellerInfo.isAdMuted = !Constants.ResellerInfo.isAdMuted
-        setImmadVolume()
-        insideAdCallbackDelegate?.insideAdCallbackReceived(data: .VOLUME_CHANGED(Int(adsManager?.volume ?? 0)))
+    @objc func changeAdVolume(notification: Notification) {
+        if let notification = notification.userInfo?["isAdMuted"] as? Bool {
+            Constants.ResellerInfo.isAdMuted = notification
+            setImmadVolume()
+        }
     }
     
     private func setImmadVolume(){
