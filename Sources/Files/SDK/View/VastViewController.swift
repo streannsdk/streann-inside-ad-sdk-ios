@@ -115,6 +115,10 @@ class VastViewController: UIViewController, ObservableObject {
             }
         }
     }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self, name: Notification.Name("changeInsideAdSdkAdVolume"), object: nil)
+    }
 }
 
 //IMA Delegate methods
