@@ -79,7 +79,7 @@ class VastViewController: UIViewController, ObservableObject {
 
     @objc func changeAdVolume(notification: Notification) {
         if let notification = notification.userInfo?["isAdMuted"] as? Bool {
-            Constants.ResellerInfo.isAdMuted = notification
+            Constants.ResellerInfo.isAdMuted = !notification
             setImmadVolume()
         }
     }
