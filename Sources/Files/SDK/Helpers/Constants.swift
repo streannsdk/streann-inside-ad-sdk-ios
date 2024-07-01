@@ -37,6 +37,11 @@ struct Constants {
         static let speakerWaveTwoFill = "speaker.wave.2.fill"
         static let xMarkCircleFill = "xmark.circle.fill"
     }
+
+    struct Notifications {
+        static let changeInsideAdSdkAdVolume = "changeInsideAdSdkAdVolume"
+        static let isAdMuted = "isAdMuted"
+    }
 }
 
 struct Logger {
