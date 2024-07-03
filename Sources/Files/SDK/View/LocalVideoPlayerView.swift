@@ -40,6 +40,11 @@ struct LocalVideoPlayerView: View {
         .task {
             adsManager.localVideoManager.loadAsset()
         }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name(rawValue: Constants.Notifications.changeInsideAdSdkAdVolume)), perform: { notification in
+            if let notification = notification.userInfo?[Constants.Notifications.isAdMuted] as? Bool {
+                adsManager.localVideoManager.playerIsMuted.toggle()
+            }
+        })
     }
 }
 
