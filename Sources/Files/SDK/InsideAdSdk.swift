@@ -39,7 +39,7 @@ public class InsideAdSdk {
     public init() { }
     
     @ViewBuilder
-    public func insideAdView(delegate: InsideAdCallbackDelegate, screen: String? = nil, isAdMuted: Bool = false, contentTargeting: TargetModel? = nil) -> some View {
-        AdsContentView(delegate: delegate, screen: screen, isAdMuted: isAdMuted, targetModel: contentTargeting)
+    public func insideAdView(delegate: InsideAdCallbackDelegate, screen: String? = nil, isAdMuted: Bool = false, contentTargeting: TargetModel? = nil, rotateVolumeButton: Bool? = false) -> some View {
+        AdsContentView(delegate: delegate, screen: screen, isAdMuted: isAdMuted, targetModel: contentTargeting, rotateVolumeButton: rotateVolumeButton)
     }
 }
