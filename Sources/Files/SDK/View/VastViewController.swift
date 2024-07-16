@@ -15,7 +15,7 @@ class VastViewController: UIViewController, ObservableObject {
     private let adsLoader = IMAAdsLoader(settings: nil)
     private var adsManager: IMAAdsManager?
     private var volumeButton: UIButton?
-    
+    private let button = UIButton(frame: CGRect(x: 5, y: 5, width: 20, height: 20))
     private var insideAdHelper = InsideAdHelper()
     var imaadPlayerView: UIView?
     
@@ -43,6 +43,17 @@ class VastViewController: UIViewController, ObservableObject {
             view.bringSubviewToFront(volumeButton)
         }
     }
+
+    // in some cases when the device is rotated the volume button is in an opposite direction, so this condition can modify the image if necessary
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+
+        if UIDevice.current.orientation.isLandscape && CampaignManager.shared.rotateVolumeButton ?? false {
+            button.transform = CGAffineTransform(rotationAngle: CGFloat.pi)
+        } else {
+            button.transform = CGAffineTransform(rotationAngle: 0)
+        }
+    }
     
     private func addImmadPlayerView(){
         let newView = UIView(frame: CGRect(x: 0, y: 0, width: view.frame.width, height: view.frame.height))
@@ -53,7 +64,6 @@ class VastViewController: UIViewController, ObservableObject {
     }
     
     private func addVolumeButton(){
-        let button = UIButton(frame: CGRect(x: 5, y: 5, width: 20, height: 20))
         button.backgroundColor = .white
         button.tintColor = .black
         button.layer.cornerRadius = 10
