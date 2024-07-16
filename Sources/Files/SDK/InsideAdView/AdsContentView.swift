@@ -16,12 +16,15 @@ struct AdsContentView: View {
 
     var delegate: InsideAdCallbackDelegate?
     
-    public init(delegate: InsideAdCallbackDelegate, screen: String?, isAdMuted: Bool, targetModel: TargetModel?) {
+    public init(delegate: InsideAdCallbackDelegate, screen: String?, isAdMuted: Bool, targetModel: TargetModel?, rotateVolumeButton: Bool? = false) {
         
         self.delegate = delegate
         campaignManager.screen = screen
         campaignManager.targetModel = targetModel
         Constants.ResellerInfo.isAdMuted = isAdMuted
+
+        // in some cases when the device is rotated the volume button is in an opposite direction, so this condition can modify the image if necessary
+        campaignManager.rotateVolumeButton = rotateVolumeButton
 
         //If adLoaded is true, set the activeCampaign, activeInsideAd and activePlacement otherwise don't initialize them
         if campaignManager.fetchCompleted {
