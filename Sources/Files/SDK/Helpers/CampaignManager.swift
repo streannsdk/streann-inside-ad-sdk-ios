@@ -22,6 +22,7 @@ class CampaignManager: ObservableObject {
     var geoIp: GeoIp?
     var allActiveCampaigns = [CampaignAppModel]()
     var isDeviceRotated =  false
+    var rotateVolumeButton: Bool? = false
     
     var screen: String?
     var targetModel: TargetModel?
