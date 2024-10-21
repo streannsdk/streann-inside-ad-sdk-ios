@@ -63,6 +63,10 @@ class VastViewController: UIViewController, ObservableObject {
         imaadPlayerView = view
     }
     
+    private func removeImmadPlayerView() {
+        imaadPlayerView?.removeFromSuperview()
+    }
+    
     private func addVolumeButton(){
         button.backgroundColor = .white
         button.tintColor = .black
@@ -185,6 +189,7 @@ extension VastViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
         
         else if event.type == .ALL_ADS_COMPLETED{
             insideAdCallbackDelegate?.insideAdCallbackReceived(data: .ALL_ADS_COMPLETED)
+            removeImmadPlayerView()
         }
         
         print(Logger.logVast(event.typeString))
