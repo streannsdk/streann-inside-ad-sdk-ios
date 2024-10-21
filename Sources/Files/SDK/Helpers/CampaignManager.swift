@@ -12,7 +12,11 @@ class CampaignManager: ObservableObject {
     static let shared = CampaignManager()
     
     @Published var activePlacement: Placement?
-    @Published var activeInsideAd: InsideAd?
+    @Published var activeInsideAd: InsideAd?{
+        didSet{
+            InsideAdSdk.shared.activeInsideAd = activeInsideAd
+        }
+    }
     @Published var activeCampaign: CampaignAppModel?
     
     @Published var fetchCompleted = false
