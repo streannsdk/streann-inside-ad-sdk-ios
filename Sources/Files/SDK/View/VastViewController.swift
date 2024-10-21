@@ -65,6 +65,7 @@ class VastViewController: UIViewController, ObservableObject {
     
     private func removeImmadPlayerView() {
         imaadPlayerView?.removeFromSuperview()
+        imaadPlayerView = nil
     }
     
     private func addVolumeButton(){
