@@ -47,4 +47,8 @@ public class InsideAdSdk {
     public func removeAdView() {
         CampaignManager.shared.clearAll()
     }
+
+    public func removeLocalVideoAdView(){
+        AdsManager.shared.localVideoManager.stop()
+    }
 }
