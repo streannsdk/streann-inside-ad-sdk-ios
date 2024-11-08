@@ -106,7 +106,6 @@ class CampaignManager: ObservableObject {
     func clearAll(){
         activeInsideAd = nil
         activePlacement = nil
-        AdsManager.shared.insideAdCallback = .ALL_ADS_COMPLETED
     }
     private func checkIfAdHasTagForReels() {
         // check if any of the placements has the tag for reels
