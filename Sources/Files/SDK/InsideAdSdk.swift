@@ -51,4 +51,8 @@ public class InsideAdSdk {
     public func removeLocalVideoAdView(){
         AdsManager.shared.localVideoManager.stop()
     }
+
+    public func removeVastAdView(){
+        AdsManager.shared.clearAll()
+    }
 }
