@@ -67,10 +67,6 @@ class AdsManager: ObservableObject {
         adViewWidth = 0
     }
 
-    func removeVastAd(){
-        vastController?.removeImmadPlayerView()
-    }
-    
     func startTimerForNextAd(){
         timerNextAd?.invalidate()
         timerNextAd = nil
