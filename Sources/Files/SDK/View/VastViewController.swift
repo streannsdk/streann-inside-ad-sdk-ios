@@ -63,7 +63,7 @@ class VastViewController: UIViewController, ObservableObject {
         imaadPlayerView = view
     }
     
-    private func removeImmadPlayerView() {
+     func removeImmadPlayerView() {
         imaadPlayerView?.removeFromSuperview()
         imaadPlayerView = nil
     }
