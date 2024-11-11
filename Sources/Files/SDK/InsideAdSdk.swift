@@ -53,6 +53,6 @@ public class InsideAdSdk {
     }
 
     public func removeVastAdView(){
-        AdsManager.shared.clearAll()
+        AdsManager.shared.removeVastAd()
     }
 }
