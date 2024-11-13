@@ -72,12 +72,12 @@ class InsideAdHelper {
         
         //Content ID
         if url.contains("[STREANN-CONTENT-ID]") {
-            url = url.replacingOccurrences(of:  "[STREANN-CONTENT-ID]", with: "")
+            url = url.replacingOccurrences(of:  "[STREANN-CONTENT-ID]", with: CampaignManager.shared.targetModel?.contentId ?? "")
         }
         
         //Content Title
         if url.contains("[STREANN-CONTENT-TITLE]") {
-            url = url.replacingOccurrences(of:  "[STREANN-CONTENT-TITLE]", with: "")
+            url = url.replacingOccurrences(of:  "[STREANN-CONTENT-TITLE]", with: CampaignManager.shared.targetModel?.contentTitle ?? "")
         }
         
         //Content Length (duration)
