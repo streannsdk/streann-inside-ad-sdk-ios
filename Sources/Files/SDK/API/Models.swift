@@ -168,6 +168,7 @@ class TimePeriod: Codable {
 public struct TargetModel {
     public var contentId: String?
     public var contentType: String?
+    public var contentTitle: String?
     public var seriesId: String?
     public var contentProviderId: String?
     public var categoryIds: [String]?
