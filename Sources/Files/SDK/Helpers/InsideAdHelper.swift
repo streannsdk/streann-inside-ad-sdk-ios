@@ -77,7 +77,11 @@ class InsideAdHelper {
         
         //Content Title
         if url.contains("[STREANN-CONTENT-TITLE]") {
-            url = url.replacingOccurrences(of:  "[STREANN-CONTENT-TITLE]", with: CampaignManager.shared.targetModel?.contentTitle ?? "")
+            if let contentTitle = CampaignManager.shared.targetModel?.contentTitle, !contentTitle.isEmpty {
+                url = url.replacingOccurrences(of:  "[STREANN-CONTENT-TITLE]", with: contentTitle.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")
+            }else{
+                url = url.replacingOccurrences(of:  "[STREANN-CONTENT-TITLE]", with: "")
+            }
         }
         
         //Content Length (duration)
