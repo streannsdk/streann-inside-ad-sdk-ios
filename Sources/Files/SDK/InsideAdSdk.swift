@@ -17,6 +17,7 @@ public class InsideAdSdk {
     public var hasAdForReels: Bool = false
     public var intervalForReels: Int?
     public var activeInsideAd: InsideAd?
+    public var vastTagUrl: String?
 
     public init(baseUrl: String,
                 apiKey: String,
