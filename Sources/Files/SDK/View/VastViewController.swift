@@ -112,7 +112,8 @@ class VastViewController: UIViewController, ObservableObject {
         if let url = url, let geoIp = CampaignManager.shared.geoIp {
             //Populate macros
             let adTagUrl = self.insideAdHelper.populateVastFrom(adUrl: url, geoModel: geoIp, playerSize: self.viewSize)
-            
+            InsideAdSdk.shared.vastTagUrl = adTagUrl
+
             // Create ad display container for ad rendering.
             let adDisplayContainer = IMAAdDisplayContainer(
                 adContainer: self.imaadPlayerView!, viewController: self, companionSlots: nil)
