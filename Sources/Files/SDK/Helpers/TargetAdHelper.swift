@@ -88,6 +88,7 @@ class TargetManager {
         // Filter campaigns without targeting if the content id is not contained in the campaigns targets
         if activeCampaigns.isEmpty {
             print(Logger.log("no matches, find campaigns without targeting"))
+            AdsManager.shared.insideAdCallback = .ALL_ADS_COMPLETED
             activeCampaigns += campaigns.filter { $0.targeting?.isEmpty ?? false }
         }
 
