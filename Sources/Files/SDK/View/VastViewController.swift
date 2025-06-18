@@ -164,6 +164,7 @@ extension VastViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
         AdsManager.shared.insideAdCallback = .TRIGGER_FALLBACK
         
         print(Logger.log("\(adErrorData.adError.message ?? "Unknown error")"))
+        InsideAdSdk.shared.vastErrorMessage = "\(error.message ?? "unknown error")"
     }
     
     // MARK: - IMAAdsManagerDelegate
