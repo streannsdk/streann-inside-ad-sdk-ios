@@ -125,6 +125,9 @@ class VastViewController: UIViewController, ObservableObject {
                 contentPlayhead: self.contentPlayhead,
                 userContext: nil)
             
+            //timeout in milliseconds - 15sec
+            request.vastLoadTimeout = 15000
+            
             DispatchQueue.main.asyncAfter(deadline: .now() + CampaignManager.shared.startAfterSeconds) {[weak self] in
                 self?.adsLoader.requestAds(with: request)
                 print(Logger.logVast("AD REQUESTED"))
