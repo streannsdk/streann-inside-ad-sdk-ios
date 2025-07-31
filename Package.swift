@@ -15,6 +15,9 @@ let package = Package(
             name: "streann-inside-ad-sdk-ios",
             targets: ["streann-inside-ad-sdk-ios", "GoogleInteractiveMediaAds", googleMobileAdsAlias]),
     ],
+    dependencies: [
+        .package(url: "https://github.com/Alamofire/Alamofire.git", from: "5.8.0")
+    ],
     targets: [
         .binaryTarget(
             name: "GoogleInteractiveMediaAds",
@@ -26,7 +29,9 @@ let package = Package(
                 ),
         .target(
             name: "streann-inside-ad-sdk-ios",
-            dependencies: [],
+            dependencies: [
+                "Alamofire"
+            ],
             path: "./Sources/",
             resources: [.process("streann-inside-ad-sdk-ios.xcassets")]
         ),

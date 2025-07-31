@@ -62,7 +62,6 @@ struct AdsContentView: View {
         }
         .id(adViewId)
         .frame(maxWidth: adsManager.adViewWidth, maxHeight:  adsManager.adViewHeight)
-//        .opacity(adsManager.adViewHeight == 0 ? 0 : 1)
         .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_restoreSize), perform: { _ in
             //Reset the size of the vast view if user clicked on the vast ad link and return back in the app
             switch campaignManager.activeInsideAd?.adType {

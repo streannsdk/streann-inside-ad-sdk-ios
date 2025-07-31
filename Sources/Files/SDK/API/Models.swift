@@ -107,11 +107,56 @@ public class InsideAd: Codable, WeightedObjectProtocol {
 class Targeting: Codable {
     let id: String?
     let version: Int?
-    let createdOn: Date?
-    let modifiedOn: Date?
+    let createdOn: String? 
+    let modifiedOn: String? 
     let name: String?
     let resellerId: String?
     let targets: [Target]?
+    
+    // Helper computed properties to get dates when needed
+    var createdOnDate: Date? {
+        guard let createdOn = createdOn else { return nil }
+        return parseDate(from: createdOn)
+    }
+    
+    var modifiedOnDate: Date? {
+        guard let modifiedOn = modifiedOn else { return nil }
+        return parseDate(from: modifiedOn)
+    }
+    
+    private func parseDate(from string: String) -> Date? {
+        let formatters = [
+            {
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+                formatter.locale = Locale(identifier: "en_US_POSIX")
+                formatter.timeZone = TimeZone(secondsFromGMT: 0)
+                return formatter
+            }(),
+            {
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+                formatter.locale = Locale(identifier: "en_US_POSIX")
+                formatter.timeZone = TimeZone(secondsFromGMT: 0)
+                return formatter
+            }(),
+            {
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+                formatter.locale = Locale(identifier: "en_US_POSIX")
+                formatter.timeZone = TimeZone(secondsFromGMT: 0)
+                return formatter
+            }()
+        ] as [Any]
+        
+        for formatter in formatters {
+            if let date = (formatter as AnyObject).date(from: string) {
+                return date
+            }
+        }
+        
+        return nil
+    }
 }
 
 class Target: Codable {
@@ -160,9 +205,15 @@ public enum AdType: String, Codable {
 }
 
 class TimePeriod: Codable {
-    var startTime: String? //00:00:00
-    var endTime: String? //23:30:45
-    var daysOfWeek: [String]? //MONDAY, WEDNESDAY
+    var startTime: String? 
+    var endTime: String?
+    var daysOfWeek: [String]?
+
+    init(startTime: String, endTime: String, daysOfWeek: [String]) {
+        self.startTime = startTime
+        self.endTime = endTime
+        self.daysOfWeek = daysOfWeek
+    }
 }
 
 public struct TargetModel {
@@ -209,9 +260,22 @@ extension Array where Array.Element == CampaignAppModel{
         return activeCampaigns
     }
     
-    func filterCampaignsByTimePeriod() -> [CampaignAppModel]?{
-        let activeCampaigns = self.filter { $0.timePeriods == nil || ($0.timePeriods?.filterByTimeAndWeekDay().count ?? 0) > 0 }
-        return activeCampaigns
+    func filterCampaignsByTimePeriod() -> [CampaignAppModel]? {
+        return self.filter { campaign in
+            if let periods = campaign.timePeriods {
+                return periods.filterByTimeAndWeekDay().count > 0
+            } else {
+                // Add default timePeriods if missing
+                let defaultPeriod = TimePeriod(
+                    startTime: "00:00:00",
+                    endTime: "23:59:59",
+                    daysOfWeek: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
+                )
+                let modifiedCampaign = campaign
+                modifiedCampaign.timePeriods = [defaultPeriod]
+                return true
+            }
+        }
     }
     
     func findActiveCampaignFromScreenAndTargetModel(screen: String?, targetModel: TargetModel?) -> CampaignAppModel? {

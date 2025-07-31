@@ -6,77 +6,64 @@
 //
 
 import Foundation
+import Alamofire
 
 class SDKAPI {
-    //Get GeoIpUrl
-    static func getGeoIpUrl(completionHandler: @escaping(_ getGeoIpUrl: GeoIpUrl?, _ error: Error?) -> Void) {
-      guard let url = URL(string: Constants.ResellerInfo.baseUrl + "/v1/geo-ip-config") else {
-        completionHandler(nil, nil)
-        return
-      }
-      
-      let task = URLSession.shared.dataTask(with: url) {
-        data, response, error in
-        let decoder = JSONDecoder()
-        guard let data = data, let geoModel = try? decoder.decode(GeoIpUrl.self, from: data) else {
-          completionHandler(nil, error)
-          return
-        }
-        completionHandler(geoModel, nil)
-      }
-      task.resume()
-    }
     
-    //Get GeoModel
-    static func getGeoIp(fromUrl: String, completionHandler: @escaping(_ geoModel: GeoIp?, _ error: Error?) -> Void) {
-      guard let url = URL(string: fromUrl) else {
-        completionHandler(nil, nil)
-        return
-      }
-      
-      let task = URLSession.shared.dataTask(with: url) {
-        data, response, error in
-        let decoder = JSONDecoder()
-        guard let data = data, let geoModel = try? decoder.decode(GeoIp.self, from: data) else {
-          completionHandler(nil, error)
-          return
-        }
-        completionHandler(geoModel, nil)
-      }
-      task.resume()
-    }
-
-    static func getCampaigns(countryCode: String, completionHandler: @escaping(_ campaignAppModel: [CampaignAppModel]?, _ error: Error?) -> Void) {
-        let queryItems = [
-            //URLQueryItem(name: "platform", value: "IOS"),
-                          URLQueryItem(name: "country", value: countryCode)//,
-                          //URLQueryItem(name: "resellerId", value: Constants.ResellerInfo.apiKey)
-        ]
-        var urlComps = URLComponents(string: Constants.ResellerInfo.baseUrl + "/v1/r/" + Constants.ResellerInfo.apiKey +  "/campaigns/IOS")!
-        urlComps.queryItems = queryItems
-        let url = urlComps.url!
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("ApiToken \(Constants.ResellerInfo.apiToken)", forHTTPHeaderField: "Authorization")
+    // Get GeoIpUrl
+    static func getGeoIpUrl(completionHandler: @escaping (_ geoIpUrl: GeoIpUrl?, _ error: Error?) -> Void) {
+        let urlString = Constants.ResellerInfo.baseUrl + "/v1/geo-ip-config"
         
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            guard let data = data, error == nil, response != nil else {
-                print("getCampaign URLSession.shared.dataTask Error")
-                completionHandler(nil, nil)
-                return
-            }
-            do {
-                let dataString = String(data: data, encoding: .utf8)
-                print("getCampaign json \(dataString ?? "")")
-                
-                let campaignAppModel = try JSONDecoder.shared.decode([CampaignAppModel].self, from: data)
-                completionHandler(campaignAppModel, nil)
-            } catch {
-                print(error)
+        AF.request(urlString).responseDecodable(of: GeoIpUrl.self) { response in
+            switch response.result {
+            case .success(let geoIpUrl):
+                completionHandler(geoIpUrl, nil)
+            case .failure(let error):
                 completionHandler(nil, error)
             }
         }
-        task.resume()
+    }
+
+    // Get GeoIp
+    static func getGeoIp(fromUrl: String, completionHandler: @escaping (_ geoModel: GeoIp?, _ error: Error?) -> Void) {
+        AF.request(fromUrl).responseDecodable(of: GeoIp.self) { response in
+            switch response.result {
+            case .success(let geoModel):
+                completionHandler(geoModel, nil)
+            case .failure(let error):
+                completionHandler(nil, error)
+            }
+        }
+    }
+
+    // Get Campaigns
+    static func getCampaigns(countryCode: String, completionHandler: @escaping (_ campaignAppModel: [CampaignAppModel]?, _ error: Error?) -> Void) {
+        var urlComponents = URLComponents(string: Constants.ResellerInfo.baseUrl + "/v1/r/\(Constants.ResellerInfo.apiKey)/campaigns/IOS")!
+        urlComponents.queryItems = [
+            URLQueryItem(name: "country", value: countryCode)
+        ]
+        
+        guard let url = urlComponents.url else {
+            completionHandler(nil, nil)
+            return
+        }
+
+        let headers: HTTPHeaders = [
+            "Authorization": "ApiToken \(Constants.ResellerInfo.apiToken)"
+        ]
+        
+        AF.request(url, method: .get, headers: headers).responseDecodable(of: [CampaignAppModel].self, decoder: {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            return decoder
+        }()) { response in
+            switch response.result {
+            case .success(let campaignModels):
+                completionHandler(campaignModels, nil)
+            case .failure(let error):
+                print("getCampaign error: \(error)")
+                completionHandler(nil, error)
+            }
+        }
     }
 }

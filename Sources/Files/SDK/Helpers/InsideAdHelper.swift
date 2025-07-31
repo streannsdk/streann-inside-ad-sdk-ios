@@ -257,6 +257,7 @@ class InsideAdHelper {
             url = url.replacingOccurrences(of:  "[STREANN-US-PRIVACY]", with: String(format:"1---"))
         }
         
+        print(Logger.logVast("VAST URL: \(url)"))
         return url
     }
 }

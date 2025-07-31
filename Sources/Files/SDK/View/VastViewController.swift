@@ -125,6 +125,7 @@ class VastViewController: UIViewController, ObservableObject {
                 contentPlayhead: self.contentPlayhead,
                 userContext: nil)
             
+            
             //timeout in milliseconds - 15sec
             request.vastLoadTimeout = 15000
             
