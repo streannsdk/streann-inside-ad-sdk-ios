@@ -25,9 +25,16 @@ class AdsManager: ObservableObject {
             else if insideAdCallback == .TRIGGER_FALLBACK{
                 clearAll()
                 CampaignManager.shared.setFallbackAdAsActive()
+                startTimerForNextAd()
             }
             else if insideAdCallback == .AD_VIEW_DISAPPEARED{
                 clearAll()
+                startTimerForNextAd()
+            }
+            else if case .ON_ERROR(let errorMessage) = insideAdCallback {
+                print(Logger.log("Ad error occurred: \(errorMessage)"))
+                clearAll()
+                startTimerForNextAd()
             }
         }
     }
