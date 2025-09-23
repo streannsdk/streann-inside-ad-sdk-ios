@@ -79,12 +79,12 @@ struct AdsContentView: View {
             self.findActiveAdForScreen()
         }
         .onChange(of: adsManager.insideAdCallback) { newValue in
-            print(Logger.log("AdsContentView INSIDE AD CALLBACK RECEIVED: \(newValue)"))
+            print(Logger.log("<<<ADS LOG>>> AdsContentView INSIDE AD CALLBACK RECEIVED: \(newValue)"))
             //Send the callback to the delegate
             self.delegate?.insideAdCallbackReceived(data: newValue)
         }
         .onAppear(perform: {
-            print(Logger.log("AdsContentView APPEARED"))
+            print(Logger.log("<<<ADS LOG>>> AdsContentView APPEARED for screen: \(String(describing: campaignManager.screen))"))
         })
         .onDisappear{
             //If the device is rotated, don't reset the ad otherwise reset the ad

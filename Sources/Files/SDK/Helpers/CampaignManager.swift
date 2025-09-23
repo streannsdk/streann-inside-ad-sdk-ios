@@ -94,6 +94,8 @@ class CampaignManager: ObservableObject {
             self.activeCampaign = self.allActiveCampaigns.findActiveCampaignFromScreenAndTargetModel(screen: self.screen, targetModel: self.targetModel)
             self.activeInsideAd = self.activeCampaign?.placements?.activeAdFromPlacement()
             self.activePlacement = self.activeCampaign?.placements?.findBy(adId: self.activeInsideAd?.id ?? "")
+            print(Logger.log("<<<ADS LOG>>> Active Campaign Name: \(String(describing: self.activePlacement?.ads?.first?.name)) And URL: \(self.activePlacement?.ads?.first?.url) From Screen: \(self.screen)"))
+
         }
     }
     
