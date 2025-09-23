@@ -27,9 +27,9 @@ struct AdsContentView: View {
         campaignManager.rotateVolumeButton = rotateVolumeButton
 
         //If adLoaded is true, set the activeCampaign, activeInsideAd and activePlacement otherwise don't initialize them
-//        if campaignManager.fetchCompleted {
+        if campaignManager.fetchCompleted {
             self.findActiveAdForScreen()
-//        }
+        }
     }
     
     var body: some View {
@@ -85,6 +85,7 @@ struct AdsContentView: View {
         }
         .onAppear(perform: {
             print(Logger.log("<<<ADS LOG>>> AdsContentView APPEARED for screen: \(String(describing: campaignManager.screen))"))
+            self.findActiveAdForScreen()
         })
         .onDisappear{
             //If the device is rotated, don't reset the ad otherwise reset the ad
