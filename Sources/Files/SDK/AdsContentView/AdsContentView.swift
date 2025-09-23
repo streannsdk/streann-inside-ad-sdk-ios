@@ -85,7 +85,6 @@ struct AdsContentView: View {
         }
         .onAppear(perform: {
             print(Logger.log("<<<ADS LOG>>> AdsContentView APPEARED for screen: \(String(describing: campaignManager.screen))"))
-            self.findActiveAdForScreen()
         })
         .onDisappear{
             //If the device is rotated, don't reset the ad otherwise reset the ad
