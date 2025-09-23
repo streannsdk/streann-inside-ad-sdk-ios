@@ -27,9 +27,9 @@ struct AdsContentView: View {
         campaignManager.rotateVolumeButton = rotateVolumeButton
 
         //If adLoaded is true, set the activeCampaign, activeInsideAd and activePlacement otherwise don't initialize them
-        if campaignManager.fetchCompleted {
+//        if campaignManager.fetchCompleted {
             self.findActiveAdForScreen()
-        }
+//        }
     }
     
     var body: some View {
