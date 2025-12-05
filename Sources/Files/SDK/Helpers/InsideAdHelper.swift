@@ -39,7 +39,13 @@ class InsideAdHelper {
         if url.contains("[STREANN-PLAYER-WIDTH]") {
             url = url.replacingOccurrences(of:  "[STREANN-PLAYER-WIDTH]", with: String(format:"%.f", playerSize.width))
         }
-        
+
+        //Ad size (WIDTHxHEIGHT format for sz parameter)
+        if url.contains("[STREANN-AD-SIZE]") {
+            let adSize = String(format:"%.fx%.f", playerSize.width, playerSize.height)
+            url = url.replacingOccurrences(of: "[STREANN-AD-SIZE]", with: adSize)
+        }
+
         //App ID
         if url.contains("[STREANN-APP-BUNDLE-ID]") {
             url = url.replacingOccurrences(of: "[STREANN-APP-BUNDLE-ID]", with: Bundle.main.bundleIdentifier ?? "")
@@ -245,7 +251,13 @@ class InsideAdHelper {
             let date = Date()
             url = url.replacingOccurrences(of: "[STREANN-CACHEBUSTER]", with: "\(Int64(date.timeIntervalSince1970 * 1000))")
         }
-        
+
+        //Correlator (random number for competitive exclusions)
+        if url.contains("[STREANN-CORRELATOR]") {
+            let correlator = Int64.random(in: 1000000000...9999999999)
+            url = url.replacingOccurrences(of: "[STREANN-CORRELATOR]", with: "\(correlator)")
+        }
+
         //Volume
         if url.contains("[STREANN-VOLUME]") {
             url = url.replacingOccurrences(of:  "[STREANN-VOLUME]", with: "0")
@@ -268,6 +280,9 @@ extension InsideAdHelper {
         webView.evaluateJavaScript("navigator.userAgent") { userAgent,error in
             if error == nil && userAgent != nil {
                 self.userAgent = userAgent as? String ?? ""
+                print(Logger.log("User-Agent: \(self.userAgent)"))
+            } else {
+                print(Logger.log("Failed to get User-Agent: \(error?.localizedDescription ?? "unknown error")"))
             }
         }
     }

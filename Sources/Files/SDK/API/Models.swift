@@ -91,14 +91,14 @@ public class PlacementProperties: Codable {
 }
 
 public class InsideAd: Codable, WeightedObjectProtocol {
-    var id: String?
-    var name: String?
-    var description: String?
+    public var id: String?
+    public var name: String?
+    public var description: String?
     var weight: Int?
     public  var adType: AdType?
     var resellerID: String?
     var fallBackID: String?
-    var url: String?
+    public var url: String?
     var properties: AdProperties?
     var fallback: InsideAd?
     var contentTargeting: [Targeting]?

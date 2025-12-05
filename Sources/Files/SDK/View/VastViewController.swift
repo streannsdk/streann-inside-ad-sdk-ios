@@ -12,15 +12,28 @@ import AVFoundation
 
 class VastViewController: UIViewController, ObservableObject {
     private var contentPlayhead: IMAAVPlayerContentPlayhead?
-    private let adsLoader = IMAAdsLoader(settings: nil)
+    private let adsLoader: IMAAdsLoader = {
+        let settings = IMASettings()
+        settings.enableBackgroundPlayback = false
+        settings.autoPlayAdBreaks = true
+        settings.language = "en"
+        settings.playerType = "ios-video-player"
+        settings.playerVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        return IMAAdsLoader(settings: settings)
+    }()
     private var adsManager: IMAAdsManager?
     private var volumeButton: UIButton?
     private let button = UIButton(frame: CGRect(x: 5, y: 5, width: 20, height: 20))
     private var insideAdHelper = InsideAdHelper()
     var imaadPlayerView: UIView?
-    
+
     var viewSize: CGSize = CGSize(width: 300, height: 250)
-    
+
+    // Retry logic for VAST requests
+    private var retryCount = 0
+    private let maxRetries = 5
+    private let retryDelay: TimeInterval = 2.0  // seconds between retries
+
     //Delegates
     var insideAdCallbackDelegate: InsideAdCallbackDelegate?
         
@@ -107,32 +120,32 @@ class VastViewController: UIViewController, ObservableObject {
     // MARK: IMA integration methods
     func requestAds() {
         let activeInsideAd = CampaignManager.shared.activeInsideAd
-        let url = activeInsideAd?.url
-        
-        if let url = url, let geoIp = CampaignManager.shared.geoIp {
-            //Populate macros
-            let adTagUrl = self.insideAdHelper.populateVastFrom(adUrl: url, geoModel: geoIp, playerSize: self.viewSize)
-            InsideAdSdk.shared.vastTagUrl = adTagUrl
+        guard let url = activeInsideAd?.url, let geoIp = CampaignManager.shared.geoIp else {
+            print(Logger.log("No active ad or GeoIP data available"))
+            return
+        }
 
-            // Create ad display container for ad rendering.
-            let adDisplayContainer = IMAAdDisplayContainer(
-                adContainer: self.imaadPlayerView!, viewController: self, companionSlots: nil)
-            
-            // Create an ad request with our ad tag, display container, and optional user context.
-            let request = IMAAdsRequest(
-                adTagUrl: adTagUrl,
-                adDisplayContainer: adDisplayContainer,
-                contentPlayhead: self.contentPlayhead,
-                userContext: nil)
-            
-            
-            //timeout in milliseconds - 15sec
-            request.vastLoadTimeout = 15000
-                    
-            DispatchQueue.main.asyncAfter(deadline: .now() + CampaignManager.shared.startAfterSeconds) {[weak self] in
-                self?.adsLoader.requestAds(with: request)
-                print(Logger.logVast("AD REQUESTED"))
-            }
+        //Populate macros
+        let adTagUrl = self.insideAdHelper.populateVastFrom(adUrl: url, geoModel: geoIp, playerSize: self.viewSize)
+        InsideAdSdk.shared.vastTagUrl = adTagUrl
+
+        // Create ad display container for ad rendering.
+        let adDisplayContainer = IMAAdDisplayContainer(
+            adContainer: self.imaadPlayerView!, viewController: self, companionSlots: nil)
+
+        // Create an ad request with our ad tag, display container, and optional user context.
+        let request = IMAAdsRequest(
+            adTagUrl: adTagUrl,
+            adDisplayContainer: adDisplayContainer,
+            contentPlayhead: self.contentPlayhead,
+            userContext: nil)
+
+        //timeout in milliseconds - 30sec (increased to handle multiple VAST wrappers)
+        request.vastLoadTimeout = 30000
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + CampaignManager.shared.startAfterSeconds) {[weak self] in
+            self?.adsLoader.requestAds(with: request)
+            print(Logger.logVast("AD REQUESTED"))
         }
     }
 
@@ -153,22 +166,47 @@ extension VastViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
         // Grab the instance of the IMAAdsManager and set ourselves as the delegate.
         adsManager = adsLoadedData.adsManager
         adsManager?.delegate = self
-        
+
+        print(Logger.logVast("✅ VAST loaded successfully"))
+        if retryCount > 0 {
+            print(Logger.logVast("✅ Success after \(retryCount) retries!"))
+        }
+
+        // Reset retry count on success
+        retryCount = 0
+
         // Create ads rendering settings and tell the SDK to use the in-app browser.
         let adsRenderingSettings = IMAAdsRenderingSettings()
         adsRenderingSettings.linkOpenerPresentingController = self
-        
+
         // Initialize the ads manager.
         adsManager?.initialize(with: adsRenderingSettings)
     }
-    
+
     func adsLoader(_ loader: IMAAdsLoader, failedWith adErrorData: IMAAdLoadingErrorData) {
-        insideAdCallbackDelegate?.insideAdCallbackReceived(data: .ON_ERROR(adErrorData.adError.message ?? ""))
-        
+        let errorMessage = adErrorData.adError.message ?? "Unknown error"
+        let errorCode = adErrorData.adError.code
+        let errorType = adErrorData.adError.type
+
+        print(Logger.log("VAST Error - Message: \(errorMessage), Code: \(errorCode.rawValue), Type: \(errorType.rawValue)"))
+        print(Logger.log("VAST Tag URL: \(InsideAdSdk.shared.vastTagUrl ?? "N/A")"))
+
+        // Retry logic for error 303 (No Ads VAST response after wrappers)
+        if errorCode.rawValue == 303 && retryCount < maxRetries {
+            retryCount += 1
+            print(Logger.logVast("⚠️ Error 303 detected. Retrying... (Attempt \(retryCount) of \(maxRetries))"))
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + retryDelay) { [weak self] in
+                self?.requestAds()
+            }
+            return
+        }
+
+        // Max retries reached or different error - trigger fallback
+        print(Logger.log("❌ Max retries reached or non-retryable error. Triggering fallback."))
+        insideAdCallbackDelegate?.insideAdCallbackReceived(data: .ON_ERROR(errorMessage))
         AdsManager.shared.insideAdCallback = .TRIGGER_FALLBACK
-        
-        print(Logger.log("\(adErrorData.adError.message ?? "Unknown error")"))
-        InsideAdSdk.shared.vastErrorMessage = "\(adErrorData.adError.message ?? "Unknown error")"
+        InsideAdSdk.shared.vastErrorMessage = errorMessage
     }
     
     // MARK: - IMAAdsManagerDelegate
