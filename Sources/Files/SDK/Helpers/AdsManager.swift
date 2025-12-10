@@ -49,12 +49,13 @@ class AdsManager: ObservableObject {
     var bannerAdViewController: BannerAdViewController?
     
     func clearAll() {
+        vastController?.cleanup()
         vastController = nil
         bannerAdViewController = nil
         AdsManager.shared.localVideoManager.player.replaceCurrentItem(with: nil)
         localImageManager.image = nil
         setZeroSize()
-        
+
         timerNextAd = nil
         timerNextAd?.invalidate()
     }

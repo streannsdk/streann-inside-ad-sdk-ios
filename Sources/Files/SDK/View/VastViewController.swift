@@ -80,6 +80,12 @@ class VastViewController: UIViewController, ObservableObject {
         imaadPlayerView?.removeFromSuperview()
         imaadPlayerView = nil
     }
+
+    func cleanup() {
+        volumeButton?.removeFromSuperview()
+        volumeButton = nil
+        removeImmadPlayerView()
+    }
     
     private func addVolumeButton(){
         button.backgroundColor = .white
