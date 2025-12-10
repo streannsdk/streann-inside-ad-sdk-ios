@@ -16,11 +16,12 @@ struct AdsContentView: View {
 
     var delegate: InsideAdCallbackDelegate?
     
-    public init(delegate: InsideAdCallbackDelegate, screen: String?, isAdMuted: Bool, targetModel: TargetModel?, rotateVolumeButton: Bool? = false) {
-        
+    public init(delegate: InsideAdCallbackDelegate, screen: String?, isAdMuted: Bool, targetModel: TargetModel?, rotateVolumeButton: Bool? = false, isPrerollAd: Bool = false) {
+
         self.delegate = delegate
         campaignManager.screen = screen
         campaignManager.targetModel = targetModel
+        campaignManager.isPrerollAd = isPrerollAd
         Constants.ResellerInfo.isAdMuted = isAdMuted
 
         // in some cases when the device is rotated the volume button is in an opposite direction, so this condition can modify the image if necessary
@@ -80,6 +81,17 @@ struct AdsContentView: View {
         }
         .onChange(of: adsManager.insideAdCallback) { newValue in
             print(Logger.log("<<<ADS LOG>>> AdsContentView INSIDE AD CALLBACK RECEIVED: \(newValue)"))
+
+            // If PREROLL ad completed, transition to non-PREROLL ads
+            if campaignManager.isPrerollAd && newValue == .ALL_ADS_COMPLETED {
+                print(Logger.log("<<<ADS LOG>>> PREROLL ad completed, transitioning to non-PREROLL ads"))
+                campaignManager.isPrerollAd = false
+                // Clear the current ad and find the next non-PREROLL ad
+                campaignManager.activeInsideAd = nil
+                campaignManager.activePlacement = nil
+                self.findActiveAdForScreen()
+            }
+
             //Send the callback to the delegate
             self.delegate?.insideAdCallbackReceived(data: newValue)
         }

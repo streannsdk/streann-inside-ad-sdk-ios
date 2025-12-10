@@ -293,7 +293,7 @@ extension Array where Array.Element == CampaignAppModel{
     func filterCampaignsByPlacementTags(tag: String) -> [CampaignAppModel] {
         //Filter campaigns by placement tags
         var allCampaigns = [CampaignAppModel]()
-        
+
         //Check the placements of the campaigns and if the placement tags contain the screen name, then add the campaign to the list
         for campaign in self{
             if let placements = campaign.placements{
@@ -314,6 +314,44 @@ extension Array where Array.Element == CampaignAppModel{
                     campaign.placements = plmnts
                     allCampaigns.append(campaign)
                 }
+            }
+        }
+        return allCampaigns
+    }
+
+    //Filter campaigns by placement viewType
+    func filterCampaignsByViewType(viewType: String) -> [CampaignAppModel] {
+        var allCampaigns = [CampaignAppModel]()
+
+        for campaign in self {
+            if let placements = campaign.placements {
+                var plmnts = [Placement]()
+                for placement in placements {
+                    if placement.viewType == viewType {
+                        plmnts.append(placement)
+                    }
+                }
+                campaign.placements = plmnts
+                allCampaigns.append(campaign)
+            }
+        }
+        return allCampaigns
+    }
+
+    //Exclude campaigns by placement viewType
+    func excludeCampaignsByViewType(viewType: String) -> [CampaignAppModel] {
+        var allCampaigns = [CampaignAppModel]()
+
+        for campaign in self {
+            if let placements = campaign.placements {
+                var plmnts = [Placement]()
+                for placement in placements {
+                    if placement.viewType != viewType {
+                        plmnts.append(placement)
+                    }
+                }
+                campaign.placements = plmnts
+                allCampaigns.append(campaign)
             }
         }
         return allCampaigns

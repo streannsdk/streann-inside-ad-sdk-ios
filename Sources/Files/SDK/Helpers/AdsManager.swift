@@ -18,9 +18,16 @@ class AdsManager: ObservableObject {
                 }
             }
             else if insideAdCallback == .ALL_ADS_COMPLETED {
-                CampaignManager.shared.clearAll()
-                clearAll()
-                startTimerForNextAd()
+                // If PREROLL ad completed, don't clear CampaignManager (let AdsContentView handle the transition)
+                // Otherwise, clear and start timer for next ad
+                if !CampaignManager.shared.isPrerollAd {
+                    CampaignManager.shared.clearAll()
+                    clearAll()
+                    startTimerForNextAd()
+                } else {
+                    // For PREROLL, only clear AdsManager but keep CampaignManager state for transition
+                    clearAll()
+                }
             }
             else if insideAdCallback == .TRIGGER_FALLBACK{
                 clearAll()
