@@ -91,16 +91,6 @@ struct AdsContentView: View {
         .onChange(of: adsManager.insideAdCallback) { newValue in
             print(Logger.log("<<<ADS LOG>>> AdsContentView INSIDE AD CALLBACK RECEIVED: \(newValue)"))
 
-            // If PREROLL ad completed, transition to non-PREROLL ads
-            if campaignManager.isPrerollAd && newValue == .ALL_ADS_COMPLETED {
-                print(Logger.log("<<<ADS LOG>>> PREROLL ad completed, transitioning to non-PREROLL ads"))
-                campaignManager.isPrerollAd = false
-                // Clear the current ad and find the next non-PREROLL ad
-                campaignManager.activeInsideAd = nil
-                campaignManager.activePlacement = nil
-                self.findActiveAdForScreen()
-            }
-
             //Send the callback to the delegate
             self.delegate?.insideAdCallbackReceived(data: newValue)
         }
