@@ -14,6 +14,7 @@ class CampaignManager: ObservableObject {
     @Published var activePlacement: Placement?
     @Published var activeInsideAd: InsideAd?{
         didSet{
+            print(Logger.log("<<<ADS LOG>>> activeInsideAd changed to: \(activeInsideAd?.name ?? "nil")"))
             InsideAdSdk.shared.activeInsideAd = activeInsideAd
         }
     }
@@ -92,14 +93,17 @@ class CampaignManager: ObservableObject {
     
     func findActiveAdForScreen(){
         DispatchQueue.main.async {
-            // If isPrerollAd is true and the preroll ad has already been shown, don't show it again
-//            if self.isPrerollAd {
-//                self.activeCampaign = nil
-//                self.activeInsideAd = nil
-//                self.activePlacement = nil
-//                print(Logger.log("<<<ADS LOG>>> PREROLL ad already shown, skipping"))
-//                return
-//            }
+            print(Logger.log("<<<ADS LOG>>> findActiveAdForScreen called with isPrerollAd: \(self.isPrerollAd), screen: \(self.screen ?? "nil")"))
+
+            // Log all campaigns before filtering
+            print(Logger.log("<<<ADS LOG>>> Total campaigns before filtering: \(self.allActiveCampaigns.count)"))
+            for (index, campaign) in self.allActiveCampaigns.enumerated() {
+                if let placements = campaign.placements {
+                    for placement in placements {
+                        print(Logger.log("<<<ADS LOG>>> Campaign \(index): \(placement.ads?.first?.name ?? "unknown") - viewType: \(placement.viewType ?? "nil") - tags: \(placement.tags ?? [])"))
+                    }
+                }
+            }
 
             var campaigns = self.allActiveCampaigns
 
@@ -113,6 +117,15 @@ class CampaignManager: ObservableObject {
                 print(Logger.log("<<<ADS LOG>>> Excluding PREROLL ads, found \(campaigns.count) campaigns"))
             }
 
+            // Log campaigns after filtering
+            for (index, campaign) in campaigns.enumerated() {
+                if let placements = campaign.placements {
+                    for placement in placements {
+                        print(Logger.log("<<<ADS LOG>>> After filter - Campaign \(index): \(placement.ads?.first?.name ?? "unknown") - viewType: \(placement.viewType ?? "nil")"))
+                    }
+                }
+            }
+
             self.activeCampaign = campaigns.findActiveCampaignFromScreenAndTargetModel(screen: self.screen, targetModel: self.targetModel)
             self.activeInsideAd = self.activeCampaign?.placements?.activeAdFromPlacement()
             self.activePlacement = self.activeCampaign?.placements?.findBy(adId: self.activeInsideAd?.id ?? "")
@@ -121,7 +134,7 @@ class CampaignManager: ObservableObject {
             if self.isPrerollAd && self.activeInsideAd != nil {
             }
 
-            print(Logger.log("<<<ADS LOG>>> Active Campaign Name: \(String(describing: self.activePlacement?.ads?.first?.name)) And URL: \(self.activePlacement?.ads?.first?.url) From Screen: \(self.screen)"))
+            print(Logger.log("<<<ADS LOG>>> Active Campaign Name: \(String(describing: self.activePlacement?.ads?.first?.name)) And URL: \(self.activePlacement?.ads?.first?.url) viewType: \(self.activePlacement?.viewType ?? "nil") From Screen: \(self.screen)"))
         }
     }
     

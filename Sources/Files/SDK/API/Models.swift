@@ -279,7 +279,7 @@ extension Array where Array.Element == CampaignAppModel{
     }
     
     func findActiveCampaignFromScreenAndTargetModel(screen: String?, targetModel: TargetModel?) -> CampaignAppModel? {
-        var campaigns = CampaignManager.shared.allActiveCampaigns
+        var campaigns = self
         campaigns = campaigns.filterCampaignsByPlacementTags(tag: screen ?? "")
         campaigns = TargetManager.shared.filterCampaignsByContentTargeting(campaigns: campaigns, targetingObject: targetModel)
         if campaigns.count > 1 {
@@ -331,8 +331,10 @@ extension Array where Array.Element == CampaignAppModel{
                         plmnts.append(placement)
                     }
                 }
-                campaign.placements = plmnts
-                allCampaigns.append(campaign)
+                if plmnts.count > 0 {
+                    campaign.placements = plmnts
+                    allCampaigns.append(campaign)
+                }
             }
         }
         return allCampaigns
@@ -350,8 +352,10 @@ extension Array where Array.Element == CampaignAppModel{
                         plmnts.append(placement)
                     }
                 }
-                campaign.placements = plmnts
-                allCampaigns.append(campaign)
+                if plmnts.count > 0 {
+                    campaign.placements = plmnts
+                    allCampaigns.append(campaign)
+                }
             }
         }
         return allCampaigns

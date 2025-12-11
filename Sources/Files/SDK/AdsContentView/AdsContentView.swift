@@ -19,6 +19,14 @@ struct AdsContentView: View {
     public init(delegate: InsideAdCallbackDelegate, screen: String?, isAdMuted: Bool, targetModel: TargetModel?, rotateVolumeButton: Bool? = false, isPrerollAd: Bool = false) {
 
         self.delegate = delegate
+
+        // Clear previous ad data if screen or isPrerollAd changed
+        if campaignManager.screen != screen || campaignManager.isPrerollAd != isPrerollAd {
+            campaignManager.activeInsideAd = nil
+            campaignManager.activePlacement = nil
+            campaignManager.activeCampaign = nil
+        }
+
         campaignManager.screen = screen
         campaignManager.targetModel = targetModel
         campaignManager.isPrerollAd = isPrerollAd
@@ -34,7 +42,8 @@ struct AdsContentView: View {
     }
     
     var body: some View {
-        ZStack {
+        print(Logger.log("<<<ADS LOG>>> AdsContentView body rendering - activeInsideAd: \(CampaignManager.shared.activeInsideAd?.name ?? "nil")"))
+        return ZStack {
             if let activeInsideAd = CampaignManager.shared.activeInsideAd {
                 Group {
                     switch activeInsideAd.adType {
