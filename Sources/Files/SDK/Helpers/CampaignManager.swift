@@ -31,7 +31,6 @@ class CampaignManager: ObservableObject {
     var screen: String?
     var targetModel: TargetModel?
     var isPrerollAd: Bool = false
-    var prerollAdShown: Bool = false
     
     func getAllCampaigns() {
         if Constants.ResellerInfo.apiKey == "" {
@@ -94,13 +93,13 @@ class CampaignManager: ObservableObject {
     func findActiveAdForScreen(){
         DispatchQueue.main.async {
             // If isPrerollAd is true and the preroll ad has already been shown, don't show it again
-            if self.isPrerollAd && self.prerollAdShown {
-                self.activeCampaign = nil
-                self.activeInsideAd = nil
-                self.activePlacement = nil
-                print(Logger.log("<<<ADS LOG>>> PREROLL ad already shown, skipping"))
-                return
-            }
+//            if self.isPrerollAd {
+//                self.activeCampaign = nil
+//                self.activeInsideAd = nil
+//                self.activePlacement = nil
+//                print(Logger.log("<<<ADS LOG>>> PREROLL ad already shown, skipping"))
+//                return
+//            }
 
             var campaigns = self.allActiveCampaigns
 
@@ -120,7 +119,6 @@ class CampaignManager: ObservableObject {
 
             // Mark that the preroll ad has been shown
             if self.isPrerollAd && self.activeInsideAd != nil {
-                self.prerollAdShown = true
             }
 
             print(Logger.log("<<<ADS LOG>>> Active Campaign Name: \(String(describing: self.activePlacement?.ads?.first?.name)) And URL: \(self.activePlacement?.ads?.first?.url) From Screen: \(self.screen)"))
@@ -136,7 +134,6 @@ class CampaignManager: ObservableObject {
     func clearAll(){
         activeInsideAd = nil
         activePlacement = nil
-        prerollAdShown = false
     }
     private func checkIfAdHasTagForReels() {
         // check if any of the placements has the tag for reels
