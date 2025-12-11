@@ -135,6 +135,12 @@ class CampaignManager: ObservableObject {
             }
 
             print(Logger.log("<<<ADS LOG>>> Active Campaign Name: \(String(describing: self.activePlacement?.ads?.first?.name)) And URL: \(self.activePlacement?.ads?.first?.url) viewType: \(self.activePlacement?.viewType ?? "nil") From Screen: \(self.screen)"))
+
+            // If no ads found, trigger fallback notification
+            if self.activeInsideAd == nil {
+                print(Logger.log("<<<ADS LOG>>> No ads found for screen: \(self.screen ?? "nil"), triggering fallback"))
+                AdsManager.shared.insideAdCallback = .ALL_ADS_COMPLETED
+            }
         }
     }
     
