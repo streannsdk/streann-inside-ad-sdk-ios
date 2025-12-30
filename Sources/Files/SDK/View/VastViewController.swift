@@ -31,7 +31,7 @@ class VastViewController: UIViewController, ObservableObject {
 
     // Retry logic for VAST requests
     private var retryCount = 0
-    private let maxRetries = 5
+    private let maxRetries = 3
     private let retryDelay: TimeInterval = 2.0  // seconds between retries
 
     //Delegates
