@@ -139,7 +139,13 @@ class CampaignManager: ObservableObject {
             // If no ads found, trigger fallback notification
             if self.activeInsideAd == nil {
                 print(Logger.log("<<<ADS LOG>>> No ads found for screen: \(self.screen ?? "nil"), triggering fallback"))
-                AdsManager.shared.insideAdCallback = .ALL_ADS_COMPLETED
+                // For preroll, fire TRIGGER_FALLBACK so the delegate is always notified even if
+                // insideAdCallback was already ALL_ADS_COMPLETED (SwiftUI onChange only fires on change).
+                if self.isPrerollAd {
+                    AdsManager.shared.insideAdCallback = .TRIGGER_FALLBACK
+                } else {
+                    AdsManager.shared.insideAdCallback = .ALL_ADS_COMPLETED
+                }
             }
         }
     }
