@@ -46,42 +46,38 @@ class CampaignManager: ObservableObject {
             return
         }
         
-        SDKAPI.getGeoIpUrl { geoIpUrl, error in
-            if let geoIpUrl {
-                DispatchQueue.global(qos: .background).async {
-                    SDKAPI.getGeoIp(fromUrl: geoIpUrl.geoIpUrl) { geoIp, error in
-                        if let geoIp {
+        DispatchQueue.global(qos: .background).async {
+            SDKAPI.getGeoIp { geoIp, error in
+                if let geoIp {
+                    DispatchQueue.main.async {
+                        self.geoIp = geoIp
+                        SDKAPI.getCampaigns(countryCode: self.geoIp?.countryCode ?? "") { campaigns, error in
                             DispatchQueue.main.async {
-                                self.geoIp = geoIp
-                                SDKAPI.getCampaigns(countryCode: self.geoIp?.countryCode ?? "") { campaigns, error in
-                                    DispatchQueue.main.async {
-                                        if let campaigns {
-                                            self.allActiveCampaigns = campaigns.sortActiveCampaign() ?? []
-                                            self.allActiveCampaigns.forEach { self.allPlacements.append(contentsOf: $0.placements ?? []) }
-                                            
-                                            if let nativeAdType = self.allPlacements.flatMap({ $0.ads ?? []  }).first(where: { $0.adType == .FULLSCREEN_NATIVE }) {
-                                                if let url = nativeAdType.url {
-                                                    self.adLoader = NativeAdLoaderViewModel(unitAd: url)
-                                                }
-                                                
-                                                //find the placement that contains the nativeAdType
-                                                if let nativeAdPlacement = self.allPlacements.first(where: { $0.ads?.contains(where: { $0.adType == .FULLSCREEN_NATIVE }) ?? false }) {
-                                                    if let intervalForReels = nativeAdPlacement.properties?.intervalForReels {
-                                                        InsideAdSdk.shared.intervalForReels = intervalForReels
-                                                    }
-                                                }
+                                if let campaigns {
+                                    self.allActiveCampaigns = campaigns.sortActiveCampaign() ?? []
+                                    self.allActiveCampaigns.forEach { self.allPlacements.append(contentsOf: $0.placements ?? []) }
+                                    
+                                    if let nativeAdType = self.allPlacements.flatMap({ $0.ads ?? []  }).first(where: { $0.adType == .FULLSCREEN_NATIVE }) {
+                                        if let url = nativeAdType.url {
+                                            self.adLoader = NativeAdLoaderViewModel(unitAd: url)
+                                        }
+                                        
+                                        //find the placement that contains the nativeAdType
+                                        if let nativeAdPlacement = self.allPlacements.first(where: { $0.ads?.contains(where: { $0.adType == .FULLSCREEN_NATIVE }) ?? false }) {
+                                            if let intervalForReels = nativeAdPlacement.properties?.intervalForReels {
+                                                InsideAdSdk.shared.intervalForReels = intervalForReels
                                             }
-                                            
-                                            self.checkIfAdHasTagForReels()
-                                            // Delay for the native ad to load
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + self.delayLaunchForNativeAd) {
-                                                self.fetchCompleted = true
-                                            }
-                                        } else {
-                                            let errorMsg = Logger.log("Error while getting AD.")
-                                            print(Logger.log(errorMsg))
                                         }
                                     }
+                                    
+                                    self.checkIfAdHasTagForReels()
+                                    // Delay for the native ad to load
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + self.delayLaunchForNativeAd) {
+                                        self.fetchCompleted = true
+                                    }
+                                } else {
+                                    let errorMsg = Logger.log("Error while getting AD.")
+                                    print(Logger.log(errorMsg))
                                 }
                             }
                         }
@@ -90,7 +86,7 @@ class CampaignManager: ObservableObject {
             }
         }
     }
-    
+
     func findActiveAdForScreen(){
         DispatchQueue.main.async {
             print(Logger.log("<<<ADS LOG>>> findActiveAdForScreen called with isPrerollAd: \(self.isPrerollAd), screen: \(self.screen ?? "nil")"))

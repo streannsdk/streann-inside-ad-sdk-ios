@@ -9,24 +9,11 @@ import Foundation
 import Alamofire
 
 class SDKAPI {
-    
-    // Get GeoIpUrl
-    static func getGeoIpUrl(completionHandler: @escaping (_ geoIpUrl: GeoIpUrl?, _ error: Error?) -> Void) {
-        let urlString = Constants.ResellerInfo.baseUrl + "/v1/geo-ip-config"
-        
-        AF.request(urlString).responseDecodable(of: GeoIpUrl.self) { response in
-            switch response.result {
-            case .success(let geoIpUrl):
-                completionHandler(geoIpUrl, nil)
-            case .failure(let error):
-                completionHandler(nil, error)
-            }
-        }
-    }
 
     // Get GeoIp
-    static func getGeoIp(fromUrl: String, completionHandler: @escaping (_ geoModel: GeoIp?, _ error: Error?) -> Void) {
-        AF.request(fromUrl).responseDecodable(of: GeoIp.self) { response in
+    static func getGeoIp(completionHandler: @escaping (_ geoModel: GeoIp?, _ error: Error?) -> Void) {
+        let url = "https://geoip.streann.tech/"
+        AF.request(url).responseDecodable(of: GeoIp.self) { response in
             switch response.result {
             case .success(let geoModel):
                 completionHandler(geoModel, nil)
