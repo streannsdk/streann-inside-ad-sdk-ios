@@ -12,7 +12,6 @@ struct AdsContentView: View {
     @ObservedObject var adsManager = AdsManager.shared
     
     @State private var orientation: UIDeviceOrientation = UIDevice.current.orientation
-    @State var adViewId = UUID()
 
     var delegate: InsideAdCallbackDelegate?
     
@@ -70,18 +69,7 @@ struct AdsContentView: View {
                 }
             }
         }
-        .id(adViewId)
         .frame(maxWidth: adsManager.adViewWidth, maxHeight:  adsManager.adViewHeight)
-        .onReceive(NotificationCenter.default.publisher(for: .AdsContentView_restoreSize), perform: { _ in
-            //Reset the size of the vast view if user clicked on the vast ad link and return back in the app
-            switch campaignManager.activeInsideAd?.adType {
-            case .VAST:
-                withAnimation {
-                    adViewId = UUID()
-                }
-            default: break
-            }
-        })
         .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { orientation in
             campaignManager.isDeviceRotated = true
         }
@@ -98,8 +86,11 @@ struct AdsContentView: View {
             print(Logger.log("<<<ADS LOG>>> AdsContentView APPEARED for screen: \(String(describing: campaignManager.screen))"))
         })
         .onDisappear{
-            //If the device is rotated, don't reset the ad otherwise reset the ad
-            if !campaignManager.isDeviceRotated {
+            //If the ad view is only covered by the click-through browser or the device is rotated,
+            //don't reset the ad, otherwise reset the ad
+            if adsManager.isClickThroughPresented {
+                //Keep the ad alive - it will resume when the browser is dismissed
+            } else if !campaignManager.isDeviceRotated {
                 adsManager.insideAdCallback = .AD_VIEW_DISAPPEARED
             } else {
                 campaignManager.isDeviceRotated = false

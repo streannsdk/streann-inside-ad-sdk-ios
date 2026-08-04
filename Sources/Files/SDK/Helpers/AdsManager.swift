@@ -54,6 +54,10 @@ class AdsManager: ObservableObject {
     
     var vastController: VastViewController?
     var bannerAdViewController: BannerAdViewController?
+
+    //True while the click-through (Learn More) browser covers the app, so the ad view's
+    //disappearance isn't mistaken for the user leaving the screen
+    var isClickThroughPresented = false
     
     func clearAll() {
         vastController?.cleanup()

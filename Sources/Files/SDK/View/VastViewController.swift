@@ -155,6 +155,19 @@ class VastViewController: UIViewController, ObservableObject {
         }
     }
 
+    //Topmost controller in the key window's hierarchy, used to present the click-through browser
+    static func topPresentingViewController() -> UIViewController? {
+        let keyWindow = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow }
+        var top = keyWindow?.rootViewController
+        while let presented = top?.presentedViewController {
+            top = presented
+        }
+        return top
+    }
+
     deinit {
         NotificationCenter.default.removeObserver(self, name: Notification.Name(Constants.Notifications.changeInsideAdSdkAdVolume), object: nil)
     }
@@ -182,8 +195,12 @@ extension VastViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
         retryCount = 0
 
         // Create ads rendering settings and tell the SDK to use the in-app browser.
+        // The browser must be presented from a controller that is actually installed in the
+        // window's hierarchy — presenting from this controller (whose view SwiftUI hosts
+        // directly) makes UIKit re-attach our view fullscreen when the browser is dismissed.
         let adsRenderingSettings = IMAAdsRenderingSettings()
-        adsRenderingSettings.linkOpenerPresentingController = self
+        adsRenderingSettings.linkOpenerPresentingController = Self.topPresentingViewController() ?? self
+        adsRenderingSettings.linkOpenerDelegate = self
 
         // Initialize the ads manager.
         adsManager?.initialize(with: adsRenderingSettings)
@@ -232,9 +249,15 @@ extension VastViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
                 adsManager.resume()
             }
         }
-        
+
+        else if event.type == .CLICKED {
+            //The click-through browser is about to cover the app - the ad view will disappear
+            //but must not be torn down
+            AdsManager.shared.isClickThroughPresented = true
+        }
+
         else if event.type == .RESUME {
-            NotificationCenter.post(name: .AdsContentView_restoreSize)
+            AdsManager.shared.isClickThroughPresented = false
             adsManager.resume()
         }
         
@@ -264,6 +287,22 @@ extension VastViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     }
     
     func adsManagerAdDidStartBuffering(_ adsManager: IMAAdsManager) {
+    }
+}
+
+// MARK: - IMALinkOpenerDelegate
+extension VastViewController: IMALinkOpenerDelegate {
+    func linkOpenerWillOpen(inAppLink linkOpener: NSObject) {
+        //The click-through browser is about to cover the app - the ad view will disappear
+        //but must not be torn down
+        AdsManager.shared.isClickThroughPresented = true
+    }
+
+    func linkOpenerDidClose(inAppLink linkOpener: NSObject) {
+        AdsManager.shared.isClickThroughPresented = false
+        //IMA pauses the ad for the click-through and doesn't reliably auto-resume when the
+        //browser was presented from another controller, so resume explicitly
+        adsManager?.resume()
     }
 }
 
