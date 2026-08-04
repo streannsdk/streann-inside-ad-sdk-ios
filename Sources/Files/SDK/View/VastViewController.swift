@@ -43,6 +43,21 @@ class VastViewController: UIViewController, ObservableObject {
         addImmadPlayerView()
 
         NotificationCenter.default.addObserver(self, selector: #selector(self.changeAdVolume(notification:)), name: Notification.Name(Constants.Notifications.changeInsideAdSdkAdVolume), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.appDidEnterBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.appDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
+    }
+
+    @objc private func appDidEnterBackground() {
+        adsManager?.pause()
+    }
+
+    @objc private func appDidBecomeActive() {
+        //The in-app browser also triggers didBecomeActive - resuming there is handled by
+        //linkOpenerDidClose once the browser is dismissed
+        guard !AdsManager.shared.isClickThroughPresented else { return }
+        if adsManager?.adPlaybackInfo.isPlaying == false {
+            adsManager?.resume()
+        }
     }
     
     required init?(coder: NSCoder) {
@@ -170,6 +185,8 @@ class VastViewController: UIViewController, ObservableObject {
 
     deinit {
         NotificationCenter.default.removeObserver(self, name: Notification.Name(Constants.Notifications.changeInsideAdSdkAdVolume), object: nil)
+        NotificationCenter.default.removeObserver(self, name: UIApplication.didEnterBackgroundNotification, object: nil)
+        NotificationCenter.default.removeObserver(self, name: UIApplication.didBecomeActiveNotification, object: nil)
     }
 }
 
