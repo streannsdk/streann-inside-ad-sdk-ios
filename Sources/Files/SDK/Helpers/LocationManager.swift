@@ -18,7 +18,12 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
         locationManager.requestWhenInUseAuthorization()
+#if os(tvOS)
+        // tvOS has no continuous location updates; only a one-shot request is available.
+        locationManager.requestLocation()
+#else
         locationManager.startUpdatingLocation()
+#endif
     }
     
     var statusString: String {
@@ -45,5 +50,9 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         guard let location = locations.last else { return }
         lastLocation = location
         print(#function, location)
+    }
+
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print(Logger.log("Location request failed: \(error.localizedDescription)"))
     }
 }

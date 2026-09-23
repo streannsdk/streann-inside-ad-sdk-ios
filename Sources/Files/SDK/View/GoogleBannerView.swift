@@ -5,20 +5,24 @@
 //  Created by Igor Parnadjiev on 8.2.24.
 //
 
+// Google Mobile Ads ships no tvOS slice, so banner ads are iOS-only.
+#if os(iOS)
+
 import UIKit
 import SwiftUI
 import GoogleMobileAds
 
 struct BannerAdViewWrapper: UIViewRepresentable, InsideAdCallbackDelegate {
-    @Binding var insideAdCallback: InsideAdCallbackType
+    let slot: AdSlot
     
     func makeUIView(context: Context) -> UIView {
-        if AdsManager.shared.bannerAdViewController == nil {
-            AdsManager.shared.bannerAdViewController = BannerAdViewController()
-            AdsManager.shared.bannerAdViewController?.insideAdCallbackDelegate = self
-            AdsManager.shared.bannerAdViewController?.setupBannerView()
+        if slot.bannerAdViewController == nil {
+            let controller = BannerAdViewController(slot: slot)
+            controller.insideAdCallbackDelegate = self
+            slot.bannerAdViewController = controller
+            controller.setupBannerView()
         }
-        return AdsManager.shared.bannerAdViewController!.bannerView
+        return slot.bannerAdViewController!.bannerView
     }
     
     func updateUIView(_ uiViewController: UIView, context: Context) {
@@ -26,7 +30,7 @@ struct BannerAdViewWrapper: UIViewRepresentable, InsideAdCallbackDelegate {
     }
     
     func insideAdCallbackReceived(data: InsideAdCallbackType) {
-        insideAdCallback = data
+        slot.insideAdCallback = data
         print("delegateState \(data)")
     }
 }
@@ -36,13 +40,25 @@ class BannerAdViewController: UIViewController, ObservableObject {
     var adSizes = [NSValue]()
     var bannerView: GAMBannerView = GAMBannerView(adSize: GADAdSizeBanner)
 
+    /// The placement this banner belongs to.
+    private unowned let slot: AdSlot
+
+    init(slot: AdSlot) {
+        self.slot = slot
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
     override func viewDidLoad() {
         
     }
 
     func setupBannerView() {
-        bannerView.adUnitID = CampaignManager.shared.activeInsideAd?.url
-        bannerView.rootViewController = AdsManager.shared.bannerAdViewController
+        bannerView.adUnitID = slot.activeInsideAd?.url
+        bannerView.rootViewController = self
         bannerView.delegate = self
         bannerView.adSizeDelegate = self
         loadBannerAd()
@@ -62,7 +78,7 @@ class BannerAdViewController: UIViewController, ObservableObject {
     }
 
     private func addValidSizesToBannerView() {
-        if let sizes = CampaignManager.shared.activeInsideAd?.properties?.sizes {
+        if let sizes = slot.activeInsideAd?.properties?.sizes {
             for size in sizes {
                 let customSize = GADAdSizeFromCGSize(CGSize(width: size.width ?? 320, height: size.height ?? 50))
                 adSizes.append(NSValueFromGADAdSize(customSize))
@@ -80,7 +96,7 @@ extension BannerAdViewController: GADBannerViewDelegate, GADAdSizeDelegate {
     
     func bannerViewDidReceiveAd(_ bannerView: GADBannerView) {
         self.insideAdCallbackDelegate?.insideAdCallbackReceived(data: .STARTED)
-        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(CampaignManager.shared.activeInsideAd?.properties?.durationInSeconds ?? 10 + Int(CampaignManager.shared.startAfterSeconds))) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(slot.activeInsideAd?.properties?.durationInSeconds ?? 10 + Int(slot.startAfterSeconds))) {
             bannerView.removeFromSuperview()
             self.insideAdCallbackDelegate?.insideAdCallbackReceived(data: .ALL_ADS_COMPLETED)
         }
@@ -88,7 +104,7 @@ extension BannerAdViewController: GADBannerViewDelegate, GADAdSizeDelegate {
 
     func bannerView(_ bannerView: GADBannerView, didFailToReceiveAdWithError error: Error) {
         insideAdCallbackDelegate?.insideAdCallbackReceived(data: .ON_ERROR(error.localizedDescription))
-        AdsManager.shared.insideAdCallback = .TRIGGER_FALLBACK
+        slot.insideAdCallback = .TRIGGER_FALLBACK
     }
     
     func bannerViewDidRecordImpression(_ bannerView: GADBannerView) {
@@ -108,3 +124,4 @@ extension BannerAdViewController: GADBannerViewDelegate, GADAdSizeDelegate {
     }
 }
 
+#endif

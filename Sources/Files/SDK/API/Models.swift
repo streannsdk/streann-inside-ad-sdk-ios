@@ -72,6 +72,31 @@ public class CampaignAppModel: Codable, WeightedObjectProtocol {
     var placements: [Placement]?
     var properties: CampaignAppModelProperties?
     var targeting: [Targeting]?
+
+    /// Returns a copy carrying only `placements`.
+    ///
+    /// Placement filtering used to assign straight onto `self.placements`. Because this is a
+    /// class, that permanently narrowed the campaigns cached in `allActiveCampaigns` — so
+    /// resolving one screen (e.g. MULTIVIEW_RIGHT_BAR) would strip another screen's
+    /// placements (MULTIVIEW_CANVAS) for the rest of the session. Copying keeps the cache intact.
+    func copy(withPlacements placements: [Placement]) -> CampaignAppModel {
+        let copy = CampaignAppModel()
+        copy.id = id
+        copy.name = name
+        copy.startDate = startDate
+        copy.endDate = endDate
+        copy.platforms = platforms
+        copy.allowedCountries = allowedCountries
+        copy.restrictedCountries = restrictedCountries
+        copy.weight = weight
+        copy.timePeriods = timePeriods
+        copy.placements = placements
+        copy.properties = properties
+        copy.targeting = targeting
+        return copy
+    }
+
+    init() {}
 }
 
 public class Placement: Codable {
@@ -293,26 +318,29 @@ extension Array where Array.Element == CampaignAppModel{
     func filterCampaignsByPlacementTags(tag: String) -> [CampaignAppModel] {
         //Filter campaigns by placement tags
         var allCampaigns = [CampaignAppModel]()
-
-        //Check the placements of the campaigns and if the placement tags contain the screen name, then add the campaign to the list
+        
+        //Check the placements of the campaigns and if the placement matches the screen name, then add the campaign to the list
         for campaign in self{
             if let placements = campaign.placements{
                 var plmnts = [Placement]()
                 for placement in placements {
-                    if let tags = placement.tags, !tags.isEmpty{
-                        if tags.contains(tag){
+                    if tag.isEmpty {
+                        //No screen requested: only placements without tags are eligible
+                        if (placement.tags ?? []).isEmpty {
                             plmnts.append(placement)
                         }
-                    }else{
-                        //If the placement doesn't have any tags, then add the placement to the list
-                        if tag == ""{
+                    } else {
+                        //A placement identifies its screen either through tags or through
+                        //viewType — the Multiview placements are configured with viewType
+                        //and carry no tags at all, so matching tags alone found nothing.
+                        if (placement.tags ?? []).contains(tag) || placement.viewType == tag {
                             plmnts.append(placement)
                         }
                     }
                 }
                 if plmnts.count > 0{
-                    campaign.placements = plmnts
-                    allCampaigns.append(campaign)
+                    // Copy rather than assign onto the cached campaign — see CampaignAppModel.copy.
+                    allCampaigns.append(campaign.copy(withPlacements: plmnts))
                 }
             }
         }
@@ -387,10 +415,10 @@ extension Array where Array.Element == Placement{
         self.filter { ($0.ads ?? []).findBy(adId: adId) != nil }.first
     }
     
-    func activeAdFromPlacement() -> InsideAd? {
+    func activeAdFromPlacement(for slot: AdSlot) -> InsideAd? {
         //in case of rotation, the view gets redrawn, do not return another ad if there's ad already shown
-        if CampaignManager.shared.activeInsideAd != nil && (AdsManager.shared.insideAdCallback != .UNKNOWN || AdsManager.shared.insideAdCallback != .ALL_ADS_COMPLETED){
-            return CampaignManager.shared.activeInsideAd
+        if slot.activeInsideAd != nil && (slot.insideAdCallback != .UNKNOWN || slot.insideAdCallback != .ALL_ADS_COMPLETED){
+            return slot.activeInsideAd
         }
         
         var allAdsFromPlacement = [InsideAd]()

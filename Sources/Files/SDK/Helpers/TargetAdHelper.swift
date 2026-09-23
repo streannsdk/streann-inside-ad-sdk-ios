@@ -88,7 +88,6 @@ class TargetManager {
         // Filter campaigns without targeting if the content id is not contained in the campaigns targets
         if activeCampaigns.isEmpty {
             print(Logger.log("no matches, find campaigns without targeting"))
-            AdsManager.shared.insideAdCallback = .ON_ERROR("no matches, find campaigns without targeting")
             activeCampaigns += campaigns.filter { $0.targeting?.isEmpty ?? false }
         }
 
@@ -103,6 +102,11 @@ class TargetManager {
         
         // Calculate total weight
         let totalWeight = objects.reduce(0) { $0 + ($1.weight ?? 0) }
+
+        // `Int.random(in: 0..<0)` traps, so a campaign or ad with no weight set would crash.
+        guard totalWeight > 0 else {
+            return objects.randomElement()
+        }
         
         // Generate a random value between 0 and totalWeight
         let randomNumber = Int.random(in: 0..<totalWeight)
@@ -120,11 +124,11 @@ class TargetManager {
         return objects.last
     }
     
-    func activeAdFromPlacement() -> InsideAd? {
+    func activeAdFromPlacement(for slot: AdSlot) -> InsideAd? {
         var allAdsFromPlacement = [InsideAd]()
         
         // List of all ads in all placements that belong to the campaign that match the location.
-        CampaignManager.shared.activeCampaign?.placements?.forEach({ allAdsFromPlacement.append(contentsOf: $0.ads ?? []) })
+        slot.activeCampaign?.placements?.forEach({ allAdsFromPlacement.append(contentsOf: $0.ads ?? []) })
         
         return selectObjectWithWeight(objects: allAdsFromPlacement)
     }

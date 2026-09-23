@@ -5,6 +5,9 @@
 //  Created by Sakura on 2021/05/07.
 //
 
+// Google Mobile Ads ships no tvOS slice, so native ads are iOS-only.
+#if os(iOS)
+
 import UIKit
 import GoogleMobileAds
 
@@ -175,3 +178,5 @@ extension UIImage {
         return UIColor(red: CGFloat(pixel[0]) / 255, green: CGFloat(pixel[1]) / 255, blue: CGFloat(pixel[2]) / 255, alpha: CGFloat(pixel[3]) / 255)
     }
 }
+
+#endif
