@@ -12,6 +12,21 @@ import GoogleMobileAds
 
 public protocol InsideAdCallbackDelegate {
     func insideAdCallbackReceived(data: InsideAdCallbackType)
+
+    /// Sent once per ad, just before the SDK requests it: the IMA request for VAST, the
+    /// Google request for a banner, the file download for a local image or video.
+    func insideAdRequested(screen: String?, ad: InsideAd)
+
+    /// Sent once per ad, when it is actually on screen. Unlike `.STARTED`, which a newly
+    /// mounted view is sent again for an ad already playing, this is never repeated — so
+    /// a host can count it.
+    func insideAdDisplayed(screen: String?, ad: InsideAd)
+}
+
+/// Empty defaults, so hosts that only need `insideAdCallbackReceived` don't change.
+public extension InsideAdCallbackDelegate {
+    func insideAdRequested(screen: String?, ad: InsideAd) {}
+    func insideAdDisplayed(screen: String?, ad: InsideAd) {}
 }
 
 public class InsideAdSdk {

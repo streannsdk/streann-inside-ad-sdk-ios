@@ -65,6 +65,9 @@ public final class AdSlot: ObservableObject {
     @Published var activePlacement: Placement?
     @Published var activeInsideAd: InsideAd? {
         didSet {
+            // A new ad (or a fallback, or none) starts a new reporting cycle.
+            didReportRequest = false
+            didReportDisplay = false
             // Kept for backwards compatibility: the public `InsideAdSdk.activeInsideAd`
             // reflects the default slot only, which is what single-slot hosts expect.
             if key == AdSlot.defaultKey {
@@ -123,6 +126,7 @@ public final class AdSlot: ObservableObject {
                     setFullSize()
                 }
                 scheduleCloseButton()
+                reportDisplayed()
             case .ALL_ADS_COMPLETED:
                 clearPlayback()
                 // A preroll keeps its resolved ad and runs no interval — the host takes
@@ -160,6 +164,31 @@ public final class AdSlot: ObservableObject {
         self.key = screen ?? AdSlot.defaultKey
         self.localImageManager.slot = self
         self.localVideoManager.slot = self
+    }
+
+    // MARK: - Reporting
+
+    /// Receives `insideAdRequested` / `insideAdDisplayed`: the newest view mounted for this
+    /// placement. During a handoff two views overlap, and each event must reach the host
+    /// once, not once per view.
+    var eventDelegate: InsideAdCallbackDelegate?
+    private var didReportRequest = false
+    private var didReportDisplay = false
+
+    /// Called by each player just before it requests its ad. Repeat requests for the same
+    /// ad — a VAST ad re-requested after a handoff — are not reported again.
+    func reportRequested() {
+        guard !didReportRequest, let ad = activeInsideAd else { return }
+        didReportRequest = true
+        print(Logger.log("Ad requested [\(key)]: \(ad.name ?? "-") \(ad.adType.map { "\($0)" } ?? "-")"))
+        eventDelegate?.insideAdRequested(screen: screen, ad: ad)
+    }
+
+    private func reportDisplayed() {
+        guard !didReportDisplay, let ad = activeInsideAd else { return }
+        didReportDisplay = true
+        print(Logger.log("Ad displayed [\(key)]: \(ad.name ?? "-") \(ad.adType.map { "\($0)" } ?? "-")"))
+        eventDelegate?.insideAdDisplayed(screen: screen, ad: ad)
     }
 
     // MARK: - Eligibility

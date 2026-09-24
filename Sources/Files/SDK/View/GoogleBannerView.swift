@@ -73,6 +73,7 @@ class BannerAdViewController: UIViewController, ObservableObject {
         bannerView.validAdSizes = adSizes
         
         
+        slot.reportRequested()
         self.bannerView.load(GADRequest())
         self.view.addSubview(self.bannerView)
     }

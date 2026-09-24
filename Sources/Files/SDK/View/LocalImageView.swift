@@ -120,6 +120,7 @@ class LocalImageManager: ObservableObject {
             }
         }
         loadTask = task
+        slot?.reportRequested()
         task.resume()
     }
     

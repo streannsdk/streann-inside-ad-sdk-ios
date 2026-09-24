@@ -223,6 +223,7 @@ class VastViewController: UIViewController, ObservableObject {
             
             DispatchQueue.main.asyncAfter(deadline: .now() + slot.remainingStartDelay) {[weak self] in
                 guard let self, !self.isDestroyed else { return }
+                self.slot.reportRequested()
                 self.adsLoader.requestAds(with: request)
                 print(Logger.logVast("AD REQUESTED"))
             }

@@ -120,6 +120,7 @@ struct AdsContentView: View {
         }
         .onAppear(perform: {
             slot.mountedViewCount += 1
+            slot.eventDelegate = delegate
             print(Logger.log("AdsContentView APPEARED [\(slot.key)] mounted=\(slot.mountedViewCount)"))
 
             // Tell this view's delegate what the slot is doing *now*. `onChange` only

@@ -121,6 +121,7 @@ class LocalVideoManager: ObservableObject {
     func loadAsset() {
         if let url = URL(string: slot?.activeInsideAd?.url ?? "") {
             if player.currentItem == nil {
+                slot?.reportRequested()
                 //prepare the asset
                 let asset = AVAsset(url: url)
                 let playerItem = AVPlayerItem(asset: asset)
