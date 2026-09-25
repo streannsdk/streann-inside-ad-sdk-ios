@@ -267,9 +267,21 @@ public final class AdSlot: ObservableObject {
     /// new container size but the ad is already started, so `setFullSize()` never runs
     /// again and the ad would otherwise keep its old dimensions.
     var currentAdSize: CGSize {
+        adSize(fitting: containerSize)
+    }
+
+    /// Size the ad should render at inside one particular view's container.
+    ///
+    /// Each view passes its own container rather than relying on `containerSize`, which is
+    /// shared by every view of the placement and holds whichever one wrote it last. During
+    /// a rotation both layouts' views exist and each is re-rendered with the other's
+    /// geometry on the way in or out, so the last write can be the wrong layout's size —
+    /// Multiview's canvas ad then stayed half its tile's size in landscape until the next
+    /// rotation.
+    func adSize(fitting container: CGSize?) -> CGSize {
         guard hasSizedAd else { return .zero }
-        if let containerSize, containerSize.width > 0, containerSize.height > 0 {
-            return containerSize
+        if let container, container.width > 0, container.height > 0 {
+            return container
         }
         return CGSize(width: adViewWidth, height: adViewHeight)
     }

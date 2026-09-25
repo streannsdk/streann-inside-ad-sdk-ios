@@ -13,6 +13,9 @@ struct AdsContentView: View {
     
     var delegate: InsideAdCallbackDelegate?
     private let activePlayersCount: Int?
+    /// This view's own container. The ad is sized to it, not to the slot's shared
+    /// `containerSize` — see `AdSlot.adSize(fitting:)`.
+    private let containerSize: CGSize?
     
     public init(delegate: InsideAdCallbackDelegate,
                 screen: String?,
@@ -26,6 +29,7 @@ struct AdsContentView: View {
         
         self.delegate = delegate
         self.activePlayersCount = activePlayersCount
+        self.containerSize = containerSize
 
         // State for this placement lives on its own slot, keyed by screen name, so a second
         // ad view elsewhere on screen can't overwrite this one's ad, size or callbacks.
@@ -96,7 +100,8 @@ struct AdsContentView: View {
                 .id(activeInsideAd.id ?? "")
             }
         }
-        .frame(maxWidth: slot.currentAdSize.width, maxHeight: slot.currentAdSize.height)
+        .frame(maxWidth: slot.adSize(fitting: containerSize).width,
+               maxHeight: slot.adSize(fitting: containerSize).height)
         .onChange(of: campaignManager.fetchCompleted) { _ in
             Self.findActiveAdForScreen(slot: slot)
         }
