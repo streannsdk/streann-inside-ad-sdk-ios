@@ -9,7 +9,7 @@ import SwiftUI
 
 struct LocalImageView: View {
     @EnvironmentObject var localImageManager: LocalImageManager
-    @Binding var insideAdCallback: InsideAdCallbackType
+    @ObservedObject var slot: AdSlot
     
     var body: some View {
         ZStack {
@@ -27,9 +27,9 @@ struct LocalImageView: View {
         }
         .onChange(of: localImageManager.image) { image in
             if image != nil {
-                insideAdCallback = .STARTED
+                slot.insideAdCallback = .STARTED
             } else {
-                insideAdCallback = .ALL_ADS_COMPLETED
+                slot.insideAdCallback = .ALL_ADS_COMPLETED
             }
         }
         .task {
@@ -49,18 +49,21 @@ extension LocalImageView {
         }
     }
     
+    @ViewBuilder
     private var closeButton: some View {
-        Button {
-            localImageManager.closeAdAndResetImage()
-        } label: {
-            Image(systemName: Constants.SystemImage.xMarkCircleFill)
-                .foregroundColor(.white)
+        if slot.isCloseButtonVisible {
+            Button {
+                localImageManager.closeAdAndResetImage()
+            } label: {
+                Image(systemName: Constants.SystemImage.xMarkCircleFill)
+                    .foregroundColor(.white)
+            }
         }
     }
     
     @ViewBuilder
     private var learnMoreButton: some View {
-        if let urlString = CampaignManager.shared.activeInsideAd?.properties?.clickThroughUrl, let url = URL(string: urlString) {
+        if let urlString = slot.activeInsideAd?.properties?.clickThroughUrl, let url = URL(string: urlString) {
             Link(destination: url,
                  label: {
                 Text("Learn more")
@@ -71,38 +74,73 @@ extension LocalImageView {
 }
 
 class LocalImageManager: ObservableObject {
+    /// Slot this manager belongs to. Set by AdSlot on creation.
+    weak var slot: AdSlot?
+
     @Published var image: UIImage?
-    
+
+    // The pending download, show and close for the current ad, all cancelled by `reset()`.
+    // Left running, a view mounted again started a second load, and the first load's close
+    // timer then ended the second ad early.
+    private var loadTask: URLSessionDataTask?
+    private var showWork: DispatchWorkItem?
+    private var closeWork: DispatchWorkItem?
+
     func loadImage() {
-        if image != nil{
+        // Already showing, or on its way.
+        if image != nil || loadTask != nil || showWork != nil {
             return
         }
-        guard let url = URL(string: (CampaignManager.shared.activeInsideAd?.url) ?? "") else { return }
+        guard let url = URL(string: (slot?.activeInsideAd?.url) ?? "") else { return }
 
         let task = URLSession.shared.dataTask(with: url) {[weak self] data, response, error in
-            guard let data = data else {
-                //If the image is not loaded, trigger fallback
-                DispatchQueue.main.async {
-                    AdsManager.shared.insideAdCallback = .TRIGGER_FALLBACK
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.loadTask = nil
+                guard let data = data else {
+                    //If the image is not loaded, trigger fallback
+                    self.slot?.insideAdCallback = .TRIGGER_FALLBACK
+                    return
                 }
-                return
-            }
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + CampaignManager.shared.startAfterSeconds) {
-                self?.image = UIImage(data: data)
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(CampaignManager.shared.activeInsideAd?.properties?.durationInSeconds ?? 1)) {
-                    self?.closeAdAndResetImage()
+
+                let show = DispatchWorkItem { [weak self] in
+                    guard let self else { return }
+                    self.showWork = nil
+                    self.image = UIImage(data: data)
+
+                    let close = DispatchWorkItem { [weak self] in
+                        self?.closeWork = nil
+                        self?.image = nil
+                    }
+                    self.closeWork = close
+                    DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(self.slot?.activeInsideAd?.properties?.durationInSeconds ?? 1), execute: close)
                 }
+                self.showWork = show
+                DispatchQueue.main.asyncAfter(deadline: .now() + (self.slot?.remainingStartDelay ?? 0), execute: show)
             }
         }
+        loadTask = task
+        slot?.reportRequested()
         task.resume()
     }
     
     func closeAdAndResetImage() {
         DispatchQueue.main.async {[weak self] in
+            self?.closeWork?.cancel()
+            self?.closeWork = nil
             self?.image = nil
         }
+    }
+
+    /// Drops the current ad and anything still scheduled for it.
+    func reset() {
+        loadTask?.cancel()
+        loadTask = nil
+        showWork?.cancel()
+        showWork = nil
+        closeWork?.cancel()
+        closeWork = nil
+        image = nil
     }
 }
 

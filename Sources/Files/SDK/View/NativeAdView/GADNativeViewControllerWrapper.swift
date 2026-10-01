@@ -4,6 +4,9 @@
 //
 //
 
+// Google Mobile Ads ships no tvOS slice, so native ads are iOS-only.
+#if os(iOS)
+
 import UIKit
 import SwiftUI
 import GoogleMobileAds
@@ -26,7 +29,8 @@ struct NativeAdView: View {
     public var body: some View {
         GADNativeViewControllerWrapper()
             .task {
-                AdsManager.shared.setFullscreenSize()
+                // Native ads are always fullscreen, and only ever used by the default slot.
+                CampaignManager.shared.defaultSlot.setFullscreenSize()
             }
             .ignoresSafeArea()
     }
@@ -75,3 +79,5 @@ extension NativeAdLoaderViewModel: GADNativeAdLoaderDelegate, GADAdLoaderDelegat
         return rootViewController
     }
 }
+
+#endif

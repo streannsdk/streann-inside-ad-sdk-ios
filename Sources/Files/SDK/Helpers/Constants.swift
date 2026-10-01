@@ -75,16 +75,23 @@ public enum InsideAdCallbackType: Equatable, CaseIterable {
     }
 }
 
-enum InsideAdScreenLocations: String {
+public enum InsideAdScreenLocations: String {
     case splash
     case videoPlayer
     case reels
-    
-    var rawValue : String {
+    /// Ad rendered as an extra tile inside the Multiview player grid.
+    /// Only served while 1–3 real players are visible — see `AdSlot.isEligibleForAd`.
+    case multiviewCanvas
+    /// Ad rendered above the camera/stream list (right bar in landscape, bottom bar in portrait).
+    case multiviewRightBar
+
+    public var rawValue: String {
         switch self {
         case .splash: return "Splash"
         case .videoPlayer: return "Video Player"
         case .reels: return "Reels"
+        case .multiviewCanvas: return "MULTIVIEW_CANVAS"
+        case .multiviewRightBar: return "MULTIVIEW_RIGHT_BAR"
         }
     }
 }

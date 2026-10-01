@@ -12,15 +12,7 @@ import AVFoundation
 
 class VastViewController: UIViewController, ObservableObject {
     private var contentPlayhead: IMAAVPlayerContentPlayhead?
-    private let adsLoader: IMAAdsLoader = {
-        let settings = IMASettings()
-        settings.enableBackgroundPlayback = false
-        settings.autoPlayAdBreaks = true
-        settings.language = "en"
-        settings.playerType = "ios-video-player"
-        settings.playerVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-        return IMAAdsLoader(settings: settings)
-    }()
+    private let adsLoader = IMAAdsLoader(settings: VastViewController.imaSettings())
     private var adsManager: IMAAdsManager?
     private var volumeButton: UIButton?
     private let button = UIButton(frame: CGRect(x: 5, y: 5, width: 20, height: 20))
@@ -34,10 +26,15 @@ class VastViewController: UIViewController, ObservableObject {
     private let maxRetries = 1
     private let retryDelay: TimeInterval = 2.0  // seconds between retries
 
+    /// The placement this controller belongs to. All ad state is read from and written
+    /// back to this slot, so two VAST ads on screen at once stay independent.
+    private unowned let slot: AdSlot
+    
     //Delegates
     var insideAdCallbackDelegate: InsideAdCallbackDelegate?
         
-    init() {
+    init(slot: AdSlot) {
+        self.slot = slot
         super.init(nibName: nil, bundle: nil)
         adsLoader.delegate = self
         addImmadPlayerView()
@@ -54,12 +51,26 @@ class VastViewController: UIViewController, ObservableObject {
     @objc private func appDidBecomeActive() {
         //The in-app browser also triggers didBecomeActive - resuming there is handled by
         //linkOpenerDidClose once the browser is dismissed
-        guard !AdsManager.shared.isClickThroughPresented else { return }
+        guard !slot.isClickThroughPresented else { return }
         if adsManager?.adPlaybackInfo.isPlaying == false {
             adsManager?.resume()
         }
     }
     
+    /// IMA's own settings. Debug mode makes IMA log the full request it sends, including
+    /// the signals it appends to the tag — what to compare when the same tag fills on one
+    /// platform and not another.
+    private static func imaSettings() -> IMASettings {
+        let settings = IMASettings()
+        settings.enableBackgroundPlayback = false
+        settings.autoPlayAdBreaks = true
+        settings.language = "en"
+        settings.playerType = "ios-video-player"
+        settings.playerVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        settings.enableDebugMode = InsideAdSdk.imaDebugLoggingEnabled
+        return settings
+    }
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -76,11 +87,14 @@ class VastViewController: UIViewController, ObservableObject {
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
 
-        if UIDevice.current.orientation.isLandscape && CampaignManager.shared.rotateVolumeButton ?? false {
+#if os(iOS)
+        // tvOS has no device rotation, so the button never needs flipping there.
+        if UIDevice.current.orientation.isLandscape && slot.rotateVolumeButton ?? false {
             button.transform = CGAffineTransform(rotationAngle: CGFloat.pi)
         } else {
             button.transform = CGAffineTransform(rotationAngle: 0)
         }
+#endif
     }
     
     private func addImmadPlayerView(){
@@ -96,10 +110,40 @@ class VastViewController: UIViewController, ObservableObject {
         imaadPlayerView = nil
     }
 
+    /// Set once the ad has been torn down, so a request still waiting out
+    /// `startAfterSeconds` doesn't fire for an ad nobody is showing any more.
+    private var isDestroyed = false
+
+    /// Removes the ad's views. Kept for callers that only want the UI gone; `destroy()`
+    /// is what releases IMA.
     func cleanup() {
         volumeButton?.removeFromSuperview()
         volumeButton = nil
         removeImmadPlayerView()
+    }
+
+    /// Stops the ad and releases IMA. Must run before the controller is dropped: releasing
+    /// an `IMAAdsManager` mid-playback without `destroy()` leaves IMA running against a
+    /// deallocated delegate and display container.
+    func destroy() {
+        isDestroyed = true
+        adsLoader.delegate = nil
+        let manager = adsManager
+        manager?.delegate = nil
+        adsManager = nil
+        volumeButton?.removeFromSuperview()
+        volumeButton = nil
+        removeImmadPlayerView()
+
+        // Usually reached from inside one of IMA's own callbacks — ALL_ADS_COMPLETED, or a
+        // failed load. Let that call return first: destroy the manager afterwards, and keep
+        // this controller and its loader alive until then, since the slot drops its only
+        // reference right after this and IMA is still inside the loader's method.
+        let loader = adsLoader
+        DispatchQueue.main.async {
+            manager?.destroy()
+            withExtendedLifetime((self, loader)) {}
+        }
     }
     
     private func addVolumeButton(){
@@ -108,7 +152,7 @@ class VastViewController: UIViewController, ObservableObject {
         button.layer.cornerRadius = 10
         button.layer.borderWidth = 1
         button.layer.borderColor = UIColor.white.cgColor
-        button.setImage(UIImage(systemName: Constants.ResellerInfo.isAdMuted ? Constants.SystemImage.speakerSlashFill : Constants.SystemImage.speakerFill), for: .normal)
+        button.setImage(UIImage(systemName: slot.isAdMuted ? Constants.SystemImage.speakerSlashFill : Constants.SystemImage.speakerFill), for: .normal)
         button.addTarget(self, action: #selector(volumeButtonAction), for: .touchUpInside)
         
         self.view.addSubview(button)
@@ -117,7 +161,7 @@ class VastViewController: UIViewController, ObservableObject {
     }
     
     @objc private func volumeButtonAction(_ sender: UIButton) {
-        Constants.ResellerInfo.isAdMuted = !Constants.ResellerInfo.isAdMuted
+        slot.isAdMuted.toggle()
        
         setImmadVolume()
         
@@ -128,45 +172,61 @@ class VastViewController: UIViewController, ObservableObject {
 
     @objc func changeAdVolume(notification: Notification) {
         if let notification = notification.userInfo?[Constants.Notifications.isAdMuted] as? Bool {
-            Constants.ResellerInfo.isAdMuted = !notification
+            slot.isAdMuted = !notification
             setImmadVolume()
         }
     }
     
     private func setImmadVolume(){
-        adsManager?.volume = Constants.ResellerInfo.isAdMuted ? 0 : 1
-        volumeButton?.setImage(UIImage(systemName: Constants.ResellerInfo.isAdMuted ? Constants.SystemImage.speakerSlashFill : Constants.SystemImage.speakerFill), for: .normal)
+        adsManager?.volume = slot.isAdMuted ? 0 : 1
+        volumeButton?.setImage(UIImage(systemName: slot.isAdMuted ? Constants.SystemImage.speakerSlashFill : Constants.SystemImage.speakerFill), for: .normal)
     }
     
     // MARK: IMA integration methods
     func requestAds() {
-        let activeInsideAd = CampaignManager.shared.activeInsideAd
-        guard let url = activeInsideAd?.url, let geoIp = CampaignManager.shared.geoIp else {
-            print(Logger.log("No active ad or GeoIP data available"))
-            return
-        }
+        let activeInsideAd = slot.activeInsideAd
+        let url = activeInsideAd?.url
+        
+        if let url = url, let geoIp = CampaignManager.shared.geoIp {
+            //Populate macros
+            // Report the size the host actually renders the ad at, so an ad server using the
+            // player-size macros can pick a creative that fits. `viewSize` (300×250) is only
+            // the fallback for hosts that don't pass a container size.
+            let playerSize: CGSize
+            if let containerSize = slot.containerSize, containerSize.width > 0, containerSize.height > 0 {
+                playerSize = containerSize
+            } else {
+                playerSize = self.viewSize
+            }
+            let adTagUrl = self.insideAdHelper.populateVastFrom(adUrl: url, geoModel: geoIp, playerSize: playerSize, targetModel: slot.targetModel)
+            InsideAdSdk.shared.vastTagUrl = adTagUrl
+            // The full tag, macros filled in — what to compare against another platform's
+            // request when one fills and the other doesn't.
+            print(Logger.logVast("AD TAG [\(slot.key)]: \(adTagUrl)"))
 
-        //Populate macros
-        let adTagUrl = self.insideAdHelper.populateVastFrom(adUrl: url, geoModel: geoIp, playerSize: self.viewSize)
-        InsideAdSdk.shared.vastTagUrl = adTagUrl
+            // Create ad display container for ad rendering.
+            // Deliberately the initialiser without companionSlots: IMACompanionAdSlot is
+            // declared in the tvOS headers but not built into the tvOS binary, so naming it
+            // fails to link on Apple TV. We never used companion slots anyway.
+            let adDisplayContainer = IMAAdDisplayContainer(
+                adContainer: self.imaadPlayerView!, viewController: self)
+            
+            // Create an ad request with our ad tag, display container, and optional user context.
+            let request = IMAAdsRequest(
+                adTagUrl: adTagUrl,
+                adDisplayContainer: adDisplayContainer,
+                contentPlayhead: self.contentPlayhead,
+                userContext: nil)
 
-        // Create ad display container for ad rendering.
-        let adDisplayContainer = IMAAdDisplayContainer(
-            adContainer: self.imaadPlayerView!, viewController: self, companionSlots: nil)
-
-        // Create an ad request with our ad tag, display container, and optional user context.
-        let request = IMAAdsRequest(
-            adTagUrl: adTagUrl,
-            adDisplayContainer: adDisplayContainer,
-            contentPlayhead: self.contentPlayhead,
-            userContext: nil)
-
-        //timeout in milliseconds - 30sec (increased to handle multiple VAST wrappers)
-        request.vastLoadTimeout = 30000
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + CampaignManager.shared.startAfterSeconds) {[weak self] in
-            self?.adsLoader.requestAds(with: request)
-            print(Logger.logVast("AD REQUESTED"))
+            //timeout in milliseconds - 30sec (increased to handle multiple VAST wrappers)
+            request.vastLoadTimeout = 30000
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + slot.remainingStartDelay) {[weak self] in
+                guard let self, !self.isDestroyed else { return }
+                self.slot.reportRequested()
+                self.adsLoader.requestAds(with: request)
+                print(Logger.logVast("AD REQUESTED"))
+            }
         }
     }
 
@@ -219,6 +279,11 @@ extension VastViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
         adsRenderingSettings.linkOpenerPresentingController = Self.topPresentingViewController() ?? self
         adsRenderingSettings.linkOpenerDelegate = self
 
+        // IMA gives up on the media file after 8s by default. Multiview requests its canvas
+        // ad about a second after the screen opens, while the grid player and the camera
+        // previews are all loading DRM streams, and the ad reliably timed out there.
+        adsRenderingSettings.loadVideoTimeout = 20
+        
         // Initialize the ads manager.
         adsManager?.initialize(with: adsRenderingSettings)
     }
@@ -226,27 +291,24 @@ extension VastViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     func adsLoader(_ loader: IMAAdsLoader, failedWith adErrorData: IMAAdLoadingErrorData) {
         let errorMessage = adErrorData.adError.message ?? "Unknown error"
         let errorCode = adErrorData.adError.code
-        let errorType = adErrorData.adError.type
 
-        print(Logger.log("VAST Error - Message: \(errorMessage), Code: \(errorCode.rawValue), Type: \(errorType.rawValue)"))
+        print(Logger.log("VAST Error [\(slot.key)] - Message: \(errorMessage), Code: \(errorCode.rawValue)"))
         print(Logger.log("VAST Tag URL: \(InsideAdSdk.shared.vastTagUrl ?? "N/A")"))
 
-        // Retry logic for error 303 (No Ads VAST response after wrappers)
-        if errorCode.rawValue == 303 && retryCount < maxRetries {
+        // 303 is "no ads in the VAST response", which is often transient; retry once.
+        if errorCode.rawValue == 303 && retryCount < maxRetries && !isDestroyed {
             retryCount += 1
-            print(Logger.logVast("⚠️ Error 303 detected. Retrying... (Attempt \(retryCount) of \(maxRetries))"))
-
+            print(Logger.logVast("Error 303 — retrying (attempt \(retryCount) of \(maxRetries))"))
             DispatchQueue.main.asyncAfter(deadline: .now() + retryDelay) { [weak self] in
-                self?.requestAds()
+                guard let self, !self.isDestroyed else { return }
+                self.requestAds()
             }
             return
         }
 
-        // Max retries reached or different error - trigger fallback
-        print(Logger.log("❌ Max retries reached or non-retryable error. Triggering fallback."))
-        insideAdCallbackDelegate?.insideAdCallbackReceived(data: .ON_ERROR(errorMessage))
-        AdsManager.shared.insideAdCallback = .TRIGGER_FALLBACK
         InsideAdSdk.shared.vastErrorMessage = errorMessage
+        insideAdCallbackDelegate?.insideAdCallbackReceived(data: .ON_ERROR(errorMessage))
+        slot.insideAdCallback = .TRIGGER_FALLBACK
     }
     
     // MARK: - IMAAdsManagerDelegate
@@ -270,11 +332,11 @@ extension VastViewController:IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
         else if event.type == .CLICKED {
             //The click-through browser is about to cover the app - the ad view will disappear
             //but must not be torn down
-            AdsManager.shared.isClickThroughPresented = true
+            slot.isClickThroughPresented = true
         }
 
         else if event.type == .RESUME {
-            AdsManager.shared.isClickThroughPresented = false
+            slot.isClickThroughPresented = false
             adsManager.resume()
         }
         
@@ -312,11 +374,11 @@ extension VastViewController: IMALinkOpenerDelegate {
     func linkOpenerWillOpen(inAppLink linkOpener: NSObject) {
         //The click-through browser is about to cover the app - the ad view will disappear
         //but must not be torn down
-        AdsManager.shared.isClickThroughPresented = true
+        slot.isClickThroughPresented = true
     }
 
     func linkOpenerDidClose(inAppLink linkOpener: NSObject) {
-        AdsManager.shared.isClickThroughPresented = false
+        slot.isClickThroughPresented = false
         //IMA pauses the ad for the click-through and doesn't reliably auto-resume when the
         //browser was presented from another controller, so resume explicitly
         adsManager?.resume()
@@ -324,22 +386,45 @@ extension VastViewController: IMALinkOpenerDelegate {
 }
 
 struct VastViewWrapper: UIViewRepresentable, InsideAdCallbackDelegate {
-    @Binding var insideAdCallback: InsideAdCallbackType
+    let slot: AdSlot
 
+    final class Coordinator {
+        let slot: AdSlot
+        init(slot: AdSlot) { self.slot = slot }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(slot: slot)
+    }
+
+    // Each wrapper gets its own empty container and the one IMA view is moved into it.
+    // Returning the IMA view itself broke as soon as two wrappers existed at once — a host
+    // handing a placement from one panel to another — because both SwiftUI hosts then
+    // claimed the same UIView, and the outgoing one pulled it out of the incoming one as
+    // it was dismantled, leaving the ad playing nowhere.
     func makeUIView(context: Context) -> UIView {
-        if AdsManager.shared.vastController == nil {
-            AdsManager.shared.vastController = VastViewController()
-            AdsManager.shared.vastController?.insideAdCallbackDelegate = self
-            AdsManager.shared.vastController?.requestAds()
+        let container = UIView()
+        container.backgroundColor = .clear
+
+        if slot.vastController == nil {
+            let controller = VastViewController(slot: slot)
+            controller.insideAdCallbackDelegate = self
+            slot.vastController = controller
+            controller.requestAds()
         }
-        return AdsManager.shared.vastController!.imaadPlayerView!
+        slot.attachVastView(to: container)
+        return container
     }
     
     func updateUIView(_ uiViewController: UIView, context: Context) {
         //
     }
+
+    static func dismantleUIView(_ container: UIView, coordinator: Coordinator) {
+        coordinator.slot.detachVastView(from: container)
+    }
     
     func insideAdCallbackReceived(data: InsideAdCallbackType) {
-        insideAdCallback = data
+        slot.insideAdCallback = data
     }
 }

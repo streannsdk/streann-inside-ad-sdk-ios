@@ -6,17 +6,25 @@
 //
 
 import Foundation
+#if canImport(WebKit)
 import WebKit
+#endif
 import AdSupport
 import AppTrackingTransparency
 import CryptoKit
+#if canImport(CoreTelephony)
 import CoreTelephony
+#endif
 import SystemConfiguration
 import CoreLocation
 import SwiftUI
 
 class InsideAdHelper {
+    // WebKit is unavailable on tvOS; the [STREANN-UA] macro then resolves to "",
+    // which is the same value used whenever the lookup fails on iOS.
+#if canImport(WebKit)
     var webView = WKWebView(frame: .zero)
+#endif
     var userAgent = ""
     
     init() {
@@ -26,7 +34,8 @@ class InsideAdHelper {
     // MARK: - Populate VAST URL    
     func populateVastFrom(adUrl: String,
                           geoModel: GeoIp,
-                          playerSize: CGSize) -> String {
+                          playerSize: CGSize,
+                          targetModel: TargetModel? = nil) -> String {
         
         var url = adUrl
         
@@ -78,12 +87,12 @@ class InsideAdHelper {
         
         //Content ID
         if url.contains("[STREANN-CONTENT-ID]") {
-            url = url.replacingOccurrences(of:  "[STREANN-CONTENT-ID]", with: CampaignManager.shared.targetModel?.contentId ?? "")
+            url = url.replacingOccurrences(of:  "[STREANN-CONTENT-ID]", with: targetModel?.contentId ?? "")
         }
         
         //Content Title
         if url.contains("[STREANN-CONTENT-TITLE]") {
-            if let contentTitle = CampaignManager.shared.targetModel?.contentTitle, !contentTitle.isEmpty {
+            if let contentTitle = targetModel?.contentTitle, !contentTitle.isEmpty {
                 url = url.replacingOccurrences(of:  "[STREANN-CONTENT-TITLE]", with: contentTitle.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")
             }else{
                 url = url.replacingOccurrences(of:  "[STREANN-CONTENT-TITLE]", with: "")
@@ -277,6 +286,7 @@ class InsideAdHelper {
 //MARK:- InsideAdHelper functions
 extension InsideAdHelper {
     private func getUserAgent() {
+#if canImport(WebKit)
         webView.evaluateJavaScript("navigator.userAgent") { userAgent,error in
             if error == nil && userAgent != nil {
                 self.userAgent = userAgent as? String ?? ""
@@ -285,6 +295,7 @@ extension InsideAdHelper {
                 print(Logger.log("Failed to get User-Agent: \(error?.localizedDescription ?? "unknown error")"))
             }
         }
+#endif
     }
 
     //Concert MD5String to String
@@ -315,10 +326,16 @@ extension InsideAdHelper {
         SCNetworkReachabilityGetFlags(reachability, &flags)
 
         let isReachable = flags.contains(.reachable)
+#if os(iOS)
         let isWWAN = flags.contains(.isWWAN)
+#else
+        // tvOS has no cellular radio, so the connection is always treated as WiFi.
+        let isWWAN = false
+#endif
 
         if isReachable {
             if isWWAN {
+#if canImport(CoreTelephony)
                 let networkInfo = CTTelephonyNetworkInfo()
                 let carrierType = networkInfo.serviceCurrentRadioAccessTechnology
 
@@ -334,6 +351,9 @@ extension InsideAdHelper {
                 default:
                     return "3G"
                 }
+#else
+                return "UNKNOWN"
+#endif
             } else { return "WiFi" }
         } else { return "NO INTERNET" }
     }
