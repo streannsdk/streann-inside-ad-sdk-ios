@@ -15,7 +15,13 @@ class VastViewController: UIViewController, ObservableObject {
     private let adsLoader = IMAAdsLoader(settings: VastViewController.imaSettings())
     private var adsManager: IMAAdsManager?
     private var volumeButton: UIButton?
+#if os(tvOS)
+    /// Larger than on iOS so it reads from the couch, and a `FocusableVolumeButton` so the
+    /// remote can reach it and the viewer can see when it has focus.
+    private let button = FocusableVolumeButton(frame: CGRect(x: 10, y: 10, width: 36, height: 36))
+#else
     private let button = UIButton(frame: CGRect(x: 5, y: 5, width: 20, height: 20))
+#endif
     private var insideAdHelper = InsideAdHelper()
     var imaadPlayerView: UIView?
 
@@ -134,6 +140,9 @@ class VastViewController: UIViewController, ObservableObject {
         volumeButton?.removeFromSuperview()
         volumeButton = nil
         removeImmadPlayerView()
+#if os(tvOS)
+        leaveParent()
+#endif
 
         // Usually reached from inside one of IMA's own callbacks — ALL_ADS_COMPLETED, or a
         // failed load. Let that call return first: destroy the manager afterwards, and keep
@@ -153,7 +162,12 @@ class VastViewController: UIViewController, ObservableObject {
         button.layer.borderWidth = 1
         button.layer.borderColor = UIColor.white.cgColor
         button.setImage(UIImage(systemName: slot.isAdMuted ? Constants.SystemImage.speakerSlashFill : Constants.SystemImage.speakerFill), for: .normal)
+#if os(tvOS)
+        // A press on the remote is a primary action, not a touch.
+        button.addTarget(self, action: #selector(volumeButtonAction), for: .primaryActionTriggered)
+#else
         button.addTarget(self, action: #selector(volumeButtonAction), for: .touchUpInside)
+#endif
         
         self.view.addSubview(button)
         view.bringSubviewToFront(button)
@@ -182,6 +196,16 @@ class VastViewController: UIViewController, ObservableObject {
         volumeButton?.setImage(UIImage(systemName: slot.isAdMuted ? Constants.SystemImage.speakerSlashFill : Constants.SystemImage.speakerFill), for: .normal)
     }
     
+#if os(tvOS)
+    /// Detaches from the controller `AdSlot.adoptVastController(in:)` parented this one to.
+    /// Only the controller relationship: the view stays where it is.
+    func leaveParent() {
+        guard parent != nil else { return }
+        willMove(toParent: nil)
+        removeFromParent()
+    }
+#endif
+
     // MARK: IMA integration methods
     func requestAds() {
         let activeInsideAd = slot.activeInsideAd
@@ -385,6 +409,34 @@ extension VastViewController: IMALinkOpenerDelegate {
     }
 }
 
+#if os(tvOS)
+/// The ad's volume button. A custom `UIButton` has no focus appearance on tvOS, so a viewer
+/// couldn't tell it was focused; this one grows and takes a ring, like the host's own buttons.
+final class FocusableVolumeButton: UIButton {
+    override func didUpdateFocus(in context: UIFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
+        super.didUpdateFocus(in: context, with: coordinator)
+        let isFocused = context.nextFocusedView === self
+        coordinator.addCoordinatedAnimations {
+            self.transform = isFocused ? CGAffineTransform(scaleX: 1.25, y: 1.25) : .identity
+            self.layer.borderWidth = isFocused ? 3 : 1
+            self.layer.borderColor = isFocused ? UIColor.black.cgColor : UIColor.white.cgColor
+        }
+    }
+}
+
+/// Container SwiftUI hosts the ad in. Tells the slot when it joins a window, the first moment
+/// the controller hosting it can be found.
+final class VastHostView: UIView {
+    weak var slot: AdSlot?
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        guard window != nil else { return }
+        slot?.adoptVastController(in: self)
+    }
+}
+#endif
+
 struct VastViewWrapper: UIViewRepresentable, InsideAdCallbackDelegate {
     let slot: AdSlot
 
@@ -403,7 +455,12 @@ struct VastViewWrapper: UIViewRepresentable, InsideAdCallbackDelegate {
     // claimed the same UIView, and the outgoing one pulled it out of the incoming one as
     // it was dismantled, leaving the ad playing nowhere.
     func makeUIView(context: Context) -> UIView {
+#if os(tvOS)
+        let container = VastHostView()
+        container.slot = slot
+#else
         let container = UIView()
+#endif
         container.backgroundColor = .clear
 
         if slot.vastController == nil {

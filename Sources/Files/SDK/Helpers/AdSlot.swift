@@ -390,8 +390,13 @@ public final class AdSlot: ObservableObject {
     func detachVastView(from container: UIView) {
         vastHosts.removeAll { $0.view == nil || $0.view === container }
         guard let adView = vastController?.imaadPlayerView,
-              adView.superview == nil || adView.superview === container,
-              let next = vastHosts.last?.view else { return }
+              adView.superview == nil || adView.superview === container else { return }
+        guard let next = vastHosts.last?.view else {
+#if os(tvOS)
+            vastController?.leaveParent()
+#endif
+            return
+        }
         moveVastView(into: next)
     }
 
@@ -401,7 +406,32 @@ public final class AdSlot: ObservableObject {
         adView.frame = container.bounds
         adView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         container.addSubview(adView)
+#if os(tvOS)
+        adoptVastController(in: container)
+#endif
     }
+
+#if os(tvOS)
+    /// Makes the VAST controller a child of the controller hosting `container`, once the
+    /// container is in a window and showing the ad. Called again by `VastHostView` when it
+    /// joins a window, since SwiftUI hands the container over before it is installed.
+    ///
+    /// The ad's view is moved into SwiftUI's container, but its controller was never parented,
+    /// and on tvOS the focus engine only reaches views whose controller chain leads to the
+    /// window. Detached, the ad's volume button could not be focused, and IMA's "About this
+    /// ad" sheet, which it presents from this controller, never got focus, so it couldn't be
+    /// closed.
+    func adoptVastController(in container: UIView) {
+        guard let controller = vastController,
+              container.window != nil,
+              controller.view.superview === container,
+              let parent = container.nearestViewController,
+              controller.parent !== parent else { return }
+        controller.leaveParent()
+        parent.addChild(controller)
+        controller.didMove(toParent: parent)
+    }
+#endif
 
     func startTimerForNextAd() {
         timerNextAd?.invalidate()
@@ -434,6 +464,20 @@ public final class AdSlot: ObservableObject {
 }
 
 /// Holds a view without keeping it alive, so the slot never outlives SwiftUI's hierarchy.
+#if os(tvOS)
+private extension UIView {
+    /// The first view controller up the responder chain: the one hosting this view.
+    var nearestViewController: UIViewController? {
+        var responder: UIResponder? = next
+        while let current = responder {
+            if let controller = current as? UIViewController { return controller }
+            responder = current.next
+        }
+        return nil
+    }
+}
+#endif
+
 struct WeakView {
     weak var view: UIView?
     init(_ view: UIView) { self.view = view }
