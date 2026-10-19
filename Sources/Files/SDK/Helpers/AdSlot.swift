@@ -90,6 +90,17 @@ public final class AdSlot: ObservableObject {
     /// skipped the interval between ads altogether.
     var adStartDate: Date?
 
+    /// When the current round began: the moment its ad was resolved. Both the ad's start
+    /// (`startAfterSeconds` later) and the next round (`intervalInMinutes` later) count from
+    /// here, not from when the ad ended.
+    ///
+    /// Counting the interval from the end of the ad let placements drift apart. Multiview
+    /// staggers its canvas and right-bar ads (say 20s and 5s), but a placement that got no
+    /// fill started its interval at once, while the other waited for its ad to finish; by the
+    /// next round the stagger was gone and the two ads started together, or one during the
+    /// other. Anchored to the round's start, every round keeps the same offsets.
+    var roundStartDate: Date?
+
     /// Seconds left until the resolved ad is due. Players wait this long, not the full
     /// `startAfterSeconds`, so a view that mounts partway through only waits the remainder.
     var remainingStartDelay: Double {
@@ -227,7 +238,13 @@ public final class AdSlot: ObservableObject {
             self.activeCampaign = campaign
             self.activeInsideAd = campaign?.placements?.activeAdFromPlacement(for: self)
             self.activePlacement = campaign?.placements?.findBy(adId: self.activeInsideAd?.id ?? "")
-            self.adStartDate = self.activeInsideAd == nil ? nil : Date().addingTimeInterval(self.startAfterSeconds)
+            if self.activeInsideAd != nil {
+                let now = Date()
+                self.roundStartDate = now
+                self.adStartDate = now.addingTimeInterval(self.startAfterSeconds)
+            } else {
+                self.adStartDate = nil
+            }
 
             if self.activeInsideAd == nil {
                 print(Logger.log("No ad resolved [\(self.key)]"))
@@ -245,8 +262,10 @@ public final class AdSlot: ObservableObject {
 
     func setFallbackAdAsActive() {
         if let fallbackAd = activeInsideAd?.fallback {
+            // The fallback stands in for the ad that failed, in the same round, so it keeps that
+            // ad's start date — it plays at once if that has passed. Waiting `startAfterSeconds`
+            // again from the failure pushed it toward the other placements' ads.
             activeInsideAd = fallbackAd
-            adStartDate = Date().addingTimeInterval(startAfterSeconds)
         }
     }
 
@@ -440,8 +459,13 @@ public final class AdSlot: ObservableObject {
         let intervalInMinutes = activeCampaign?.properties?.intervalInMinutes
 
         if let intervalInMinutes, intervalInMinutes > 0 {
-            print(Logger.log("Timer started for next ad [\(key)] - intervalInMinutes \(intervalInMinutes)"))
-            timerNextAd = Timer.scheduledTimer(withTimeInterval: TimeInterval(intervalInMinutes.convertMinutesToSeconds()), repeats: false) { [weak self] _ in
+            // The next round is due one interval after this one began — see `roundStartDate`.
+            // An ad that ran past that point is followed by the next round straight away.
+            let interval = TimeInterval(intervalInMinutes.convertMinutesToSeconds())
+            let nextRound = (roundStartDate ?? Date()).addingTimeInterval(interval)
+            let delay = max(0, nextRound.timeIntervalSinceNow)
+            print(Logger.log("Timer started for next ad [\(key)] - intervalInMinutes \(intervalInMinutes), next round in \(Int(delay))s"))
+            timerNextAd = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
                 // Resolves even with no view mounted; the ad then waits for the next view.
                 self?.timerNextAd = nil
                 self?.findActiveAd()
@@ -463,7 +487,6 @@ public final class AdSlot: ObservableObject {
     }
 }
 
-/// Holds a view without keeping it alive, so the slot never outlives SwiftUI's hierarchy.
 #if os(tvOS)
 private extension UIView {
     /// The first view controller up the responder chain: the one hosting this view.
@@ -478,6 +501,7 @@ private extension UIView {
 }
 #endif
 
+/// Holds a view without keeping it alive, so the slot never outlives SwiftUI's hierarchy.
 struct WeakView {
     weak var view: UIView?
     init(_ view: UIView) { self.view = view }
