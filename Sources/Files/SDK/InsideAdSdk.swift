@@ -46,15 +46,13 @@ public class InsideAdSdk {
     /// back. Off by default.
     public static var lifecycleLoggingEnabled = false
 
-    public init(baseUrl: String,
-                apiKey: String,
+    public init(apiKey: String,
                 apiToken: String,
                 siteUrl: String? = nil,
                 storeUrl: String? = nil,
                 descriptionUrl: String? = nil,
                 userBirthYear: Int64? = nil,
                 userGender: UserGender? = nil) {
-        Constants.ResellerInfo.baseUrl = baseUrl
         Constants.ResellerInfo.apiKey = apiKey
         Constants.ResellerInfo.apiToken = apiToken
         Constants.ResellerInfo.siteUrl = siteUrl ?? ""
@@ -65,7 +63,27 @@ public class InsideAdSdk {
         Self.startMobileAdsIfNeeded()
         CampaignManager.shared.getAllCampaigns()
     }
-    
+
+    /// Kept so existing apps still compile. `baseUrl` is ignored: the SDK always uses
+    /// `Constants.ResellerInfo.baseUrl`, which is the same for every reseller.
+    @available(*, deprecated, message: "baseUrl is ignored; use init(apiKey:apiToken:...) instead.")
+    public convenience init(baseUrl: String,
+                            apiKey: String,
+                            apiToken: String,
+                            siteUrl: String? = nil,
+                            storeUrl: String? = nil,
+                            descriptionUrl: String? = nil,
+                            userBirthYear: Int64? = nil,
+                            userGender: UserGender? = nil) {
+        self.init(apiKey: apiKey,
+                  apiToken: apiToken,
+                  siteUrl: siteUrl,
+                  storeUrl: storeUrl,
+                  descriptionUrl: descriptionUrl,
+                  userBirthYear: userBirthYear,
+                  userGender: userGender)
+    }
+
     public init() { }
 
     /// Starts Google's Mobile Ads SDK once per process.

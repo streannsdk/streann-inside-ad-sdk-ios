@@ -44,6 +44,7 @@ class SDKAPI {
             decoder.dateDecodingStrategy = .iso8601
             return decoder
         }()) { response in
+            logCampaignsCall(response)
             switch response.result {
             case .success(let campaignModels):
                 completionHandler(campaignModels, nil)
@@ -52,5 +53,26 @@ class SDKAPI {
                 completionHandler(nil, error)
             }
         }
+    }
+
+    /// Prints the full getCampaigns request and response.
+    private static func logCampaignsCall<T>(_ response: DataResponse<T, AFError>) {
+        let request = response.request
+        let url = request?.url
+        let parameters = URLComponents(url: url ?? URL(fileURLWithPath: ""), resolvingAgainstBaseURL: false)?
+            .queryItems?.map { "\($0.name)=\($0.value ?? "")" } ?? []
+        let requestHeaders = request?.allHTTPHeaderFields ?? [:]
+        let requestBody = request?.httpBody.flatMap { String(data: $0, encoding: .utf8) } ?? "<empty>"
+        let statusCode = response.response?.statusCode.description ?? "<no response>"
+        let responseHeaders = response.response?.allHeaderFields ?? [:]
+        let responseBody = response.data.flatMap { String(data: $0, encoding: .utf8) } ?? "<empty>"
+
+        print(Logger.log("""
+        getCampaigns REQUEST
+          \(request?.httpMethod ?? "GET") \(url?.absoluteString ?? "<no url>")
+          parameters: \(parameters)
+          headers: \(requestHeaders)
+          body: \(requestBody)
+        """))
     }
 }

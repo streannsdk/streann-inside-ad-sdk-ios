@@ -15,7 +15,7 @@ struct Constants {
     }
     
     struct ResellerInfo {
-        static var baseUrl = ""
+        static let baseUrl = "https://inside-ads.services.c1.streann.tech"
         static var apiKey = ""
         static var apiToken = ""
         static var unitId = ""

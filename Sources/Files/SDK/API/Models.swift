@@ -97,6 +97,8 @@ public class CampaignAppModel: Codable, WeightedObjectProtocol {
     }
 
     init() {}
+    
+    var logName: String { "\(name ?? "<no name>") (\(id ?? "<no id>"))" }
 }
 
 public class Placement: Codable {
@@ -280,10 +282,52 @@ extension CampaignAppModel: Comparable {
 
 extension Array where Array.Element == CampaignAppModel{
     
-    func sortActiveCampaign() -> [CampaignAppModel]?{
-        let activeCampaigns = self.filterCampaignsByTimePeriod() ?? self
+    func sortActiveCampaign(geoIp: GeoIp?) -> [CampaignAppModel]?{
+        print(Logger.log("Campaigns returned by API: \(self.count) \(self.logNames)"))
+        let countryCampaigns = self.filterCampaignsByCountry(geoIp: geoIp)
+        let activeCampaigns = countryCampaigns.filterCampaignsByTimePeriod() ?? countryCampaigns
+        let droppedByTime = countryCampaigns.filter { campaign in !activeCampaigns.contains { $0 === campaign } }
+        if !droppedByTime.isEmpty {
+            print(Logger.log("Campaigns dropped by time period: \(droppedByTime.logNames)"))
+        }
+        print(Logger.log("Active campaigns kept: \(activeCampaigns.count) \(activeCampaigns.logNames)"))
         return activeCampaigns
     }
+    
+    /// Drops campaigns the device's country may not see. The backend already filters by the
+    /// `country` query param; this is the client-side guard in case it doesn't.
+    /// Codes are matched case-insensitively against both the ISO-2 and ISO-3 country code.
+    /// When the country is unknown, any campaign with a country rule is dropped (fail closed).
+    func filterCampaignsByCountry(geoIp: GeoIp?) -> [CampaignAppModel] {
+        let deviceCodes = Set([geoIp?.countryCode, geoIp?.countryCode3]
+            .compactMap { $0?.trimmingCharacters(in: .whitespaces).uppercased() }
+            .filter { !$0.isEmpty })
+        print(Logger.log("Country filter - device country: \(deviceCodes.isEmpty ? "<unknown>" : deviceCodes.sorted().joined(separator: "/"))"))
+        
+        let kept = self.filter { campaign in
+            let allowed = (campaign.allowedCountries ?? []).map { $0.uppercased() }
+            let restricted = (campaign.restrictedCountries ?? []).map { $0.uppercased() }
+            
+            let (keep, reason): (Bool, String)
+            if allowed.isEmpty && restricted.isEmpty {
+                (keep, reason) = (true, "no country rules")
+            } else if deviceCodes.isEmpty {
+                (keep, reason) = (false, "device country unknown and campaign has country rules")
+            } else if restricted.contains(where: deviceCodes.contains) {
+                (keep, reason) = (false, "country is in restrictedCountries")
+            } else if !allowed.isEmpty && !allowed.contains(where: deviceCodes.contains) {
+                (keep, reason) = (false, "country is not in allowedCountries")
+            } else {
+                (keep, reason) = (true, allowed.isEmpty ? "country is not restricted" : "country is in allowedCountries")
+            }
+            print(Logger.log("Country filter - \(keep ? "KEEP" : "DROP") \(campaign.logName) allowed=\(allowed) restricted=\(restricted) -> \(reason)"))
+            return keep
+        }
+        print(Logger.log("Country filter - kept \(kept.count) of \(self.count) campaigns"))
+        return kept
+    }
+    
+    fileprivate var logNames: [String] { map { $0.logName } }
     
     func filterCampaignsByTimePeriod() -> [CampaignAppModel]? {
         return self.filter { campaign in
@@ -306,12 +350,12 @@ extension Array where Array.Element == CampaignAppModel{
     func findActiveCampaignFromScreenAndTargetModel(screen: String?, targetModel: TargetModel?) -> CampaignAppModel? {
         var campaigns = self
         campaigns = campaigns.filterCampaignsByPlacementTags(tag: screen ?? "")
+        print(Logger.log("Screen \(screen ?? "<default>") - campaigns with matching placement: \(campaigns.logNames)"))
         campaigns = TargetManager.shared.filterCampaignsByContentTargeting(campaigns: campaigns, targetingObject: targetModel)
-        if campaigns.count > 1 {
-            return TargetManager.shared.selectObjectWithWeight(objects: campaigns)
-        } else {
-            return campaigns.first
-        }
+        print(Logger.log("Screen \(screen ?? "<default>") - campaigns after content targeting: \(campaigns.logNames)"))
+        let selected = campaigns.count > 1 ? TargetManager.shared.selectObjectWithWeight(objects: campaigns) : campaigns.first
+        print(Logger.log("Screen \(screen ?? "<default>") - selected campaign: \(selected?.logName ?? "<none>")"))
+        return selected
     }
     
     //Filter campaigns by placement tags

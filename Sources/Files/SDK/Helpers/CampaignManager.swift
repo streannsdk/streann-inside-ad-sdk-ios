@@ -94,12 +94,6 @@ class CampaignManager: ObservableObject {
             return
         }
         
-        if Constants.ResellerInfo.baseUrl == "" {
-            let errorMsg = "Base Url is required. Please implement the initializeSdk method."
-            print(Logger.log(errorMsg))
-            return
-        }
-        
         DispatchQueue.global(qos: .background).async {
             SDKAPI.getGeoIp { geoIp, error in
                 if let geoIp {
@@ -108,7 +102,7 @@ class CampaignManager: ObservableObject {
                         SDKAPI.getCampaigns(countryCode: self.geoIp?.countryCode ?? "") { campaigns, error in
                             DispatchQueue.main.async {
                                 if let campaigns {
-                                    self.allActiveCampaigns = campaigns.sortActiveCampaign() ?? []
+                                    self.allActiveCampaigns = campaigns.sortActiveCampaign(geoIp: self.geoIp) ?? []
                                     self.allActiveCampaigns.forEach { self.allPlacements.append(contentsOf: $0.placements ?? []) }
                                     
                                     if let nativeAdType = self.allPlacements.flatMap({ $0.ads ?? []  }).first(where: { $0.adType == .FULLSCREEN_NATIVE }) {
