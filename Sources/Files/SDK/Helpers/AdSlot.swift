@@ -359,6 +359,7 @@ public final class AdSlot: ObservableObject {
         isCloseButtonVisible = false
         vastController?.destroy()
         vastController = nil
+        CampaignManager.shared.releaseVastTurn(for: self)
 #if os(iOS)
         bannerAdViewController = nil
 #endif
@@ -382,6 +383,14 @@ public final class AdSlot: ObservableObject {
             clearResolvedAd()
             startTimerForNextAd()
         }
+    }
+
+    /// The ad fell due while another placement's VAST ad was running. It is dropped unseen and
+    /// the interval runs as usual, so the next round keeps its offset from this round's start.
+    func skipRound() {
+        clearPlayback()
+        clearResolvedAd()
+        startTimerForNextAd()
     }
 
     /// The placement stopped being eligible — for Multiview's canvas, the viewer went to

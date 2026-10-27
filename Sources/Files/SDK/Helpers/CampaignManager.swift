@@ -42,6 +42,35 @@ class CampaignManager: ObservableObject {
 
     var allSlots: [AdSlot] { Array(slots.values) }
 
+    // MARK: - VAST turn
+
+    /// The slot whose VAST ad is loading or playing. Only one VAST ad may run at a time.
+    ///
+    /// Each slot keeps its own schedule, so nothing stopped two of them overlapping. Multiview
+    /// staggers its canvas (5s) and right-bar (20s) ads, but `startAfterSeconds` only says when
+    /// the request goes out: IMA can take many seconds to resolve wrappers and load media, so
+    /// the canvas ad often appeared just as the right-bar one did, and a canvas ad longer than
+    /// the stagger played straight over it. The turn is taken when the request is sent and
+    /// held until the ad ends or fails; a slot that falls due meanwhile skips its round.
+    private var vastTurnOwner: AdSlot?
+
+    /// Takes the turn for `slot`. False while another slot's VAST ad is loading or playing.
+    func takeVastTurn(for slot: AdSlot) -> Bool {
+        guard vastTurnOwner == nil || vastTurnOwner === slot else {
+            print(Logger.log("VAST ad [\(slot.key)] due while [\(vastTurnOwner?.key ?? "-")] is running — skipping this round"))
+            return false
+        }
+        vastTurnOwner = slot
+        return true
+    }
+
+    /// Called whenever `slot`'s playback is torn down.
+    func releaseVastTurn(for slot: AdSlot) {
+        if vastTurnOwner === slot {
+            vastTurnOwner = nil
+        }
+    }
+
     // MARK: - App lifecycle logging
 
     /// Prints what every slot is doing when the app changes state. Ad resolution and the

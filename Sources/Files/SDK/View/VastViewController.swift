@@ -247,9 +247,15 @@ class VastViewController: UIViewController, ObservableObject {
             
             DispatchQueue.main.asyncAfter(deadline: .now() + slot.remainingStartDelay) {[weak self] in
                 guard let self, !self.isDestroyed else { return }
+                // Another placement's VAST ad may still be loading or playing; this one then
+                // skips its round — see `CampaignManager.vastTurnOwner`.
+                guard CampaignManager.shared.takeVastTurn(for: self.slot) else {
+                    self.slot.skipRound()
+                    return
+                }
                 self.slot.reportRequested()
                 self.adsLoader.requestAds(with: request)
-                print(Logger.logVast("AD REQUESTED"))
+                print(Logger.logVast("AD REQUESTED [\(self.slot.key)]"))
             }
         }
     }
